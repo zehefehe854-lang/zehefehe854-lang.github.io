@@ -116,6 +116,81 @@ h1 { font-size: 20px; text-align: center; margin-bottom: 2px; }
   border-style: solid; border-color: var(--accent); opacity: .7; pointer-events: none;
 }
 
+/* 批量导入截图 */
+.batch-hero {
+  background: linear-gradient(135deg, #1e293b, #1a2332);
+  border: 2px dashed var(--green); border-radius: var(--r);
+  padding: 18px 14px; margin-bottom: 12px; text-align: center; cursor: pointer;
+  transition: all .15s;
+}
+.batch-hero:active { background: rgba(34,197,94,0.08); transform: scale(.98); }
+.batch-hero .batch-icon { font-size: 32px; margin-bottom: 4px; }
+.batch-hero .batch-title { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+.batch-hero .batch-desc { font-size: 11px; color: var(--sub); line-height: 1.4; }
+
+/* 批量导入弹窗 */
+.batch-modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000;
+  display: flex; flex-direction: column; padding: env(safe-area-inset-top, 12px) 16px 16px;
+  overflow-y: auto;
+}
+.batch-modal-header {
+  text-align: center; margin-bottom: 14px; flex-shrink: 0;
+}
+.batch-modal-header h3 { font-size: 18px; margin-bottom: 4px; }
+.batch-modal-header .batch-hint { font-size: 12px; color: var(--sub); }
+.batch-groups { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; margin-bottom: 14px; }
+.batch-group-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--r);
+  padding: 12px; transition: all .2s;
+}
+.batch-group-card .group-label {
+  font-size: 11px; color: var(--accent); font-weight: 700; margin-bottom: 6px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.batch-group-card .group-thumbs {
+  display: flex; gap: 4px; overflow-x: auto; margin-bottom: 10px;
+  padding-bottom: 4px;
+}
+.batch-group-card .group-thumbs img {
+  width: 70px; height: 100px; object-fit: cover; border-radius: 6px;
+  border: 1px solid var(--border); flex-shrink: 0;
+}
+.batch-group-card .group-thumbs .more-count {
+  width: 70px; height: 100px; flex-shrink: 0; border-radius: 6px;
+  background: var(--input); display: flex; align-items: center; justify-content: center;
+  font-size: 14px; color: var(--sub);
+}
+.batch-group-card .group-inputs {
+  display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+}
+.batch-group-card .group-inputs input,
+.batch-group-card .group-inputs select {
+  padding: 9px 8px; font-size: 13px; background: var(--input);
+  border: 1px solid var(--border); border-radius: 8px; color: var(--text); outline: none;
+}
+.batch-group-card .group-inputs input:focus { border-color: var(--accent); }
+.batch-group-card .group-inputs .gname { flex: 2; min-width: 80px; }
+.batch-group-card .group-inputs .gprice { flex: 1; min-width: 60px; }
+.batch-group-card .group-inputs .gpfm { flex: 1.2; min-width: 70px; font-size: 11px; }
+.batch-actions {
+  display: flex; gap: 10px; flex-shrink: 0;
+  position: sticky; bottom: 0; background: var(--bg); padding-top: 10px;
+}
+.batch-actions button {
+  flex: 1; padding: 12px; font-size: 14px; font-weight: 700;
+  border: none; border-radius: var(--r); cursor: pointer;
+}
+.batch-actions .btn-cancel { background: var(--input); color: var(--sub); }
+.batch-actions .btn-confirm { background: var(--green); color: #000; }
+
+/* 卡片中截图缩略图 */
+.card-thumbs { display: flex; gap: 2px; margin-top: 6px; overflow-x: auto; }
+.card-thumbs img {
+  width: 40px; height: 56px; object-fit: cover; border-radius: 4px;
+  border: 1px solid var(--border); flex-shrink: 0;
+}
+
 /* 手动输入 */
 .manual-row {
   display: flex; gap: 6px; margin-bottom: 8px; align-items: center;
@@ -268,7 +343,7 @@ h1 { font-size: 20px; text-align: center; margin-bottom: 2px; }
 <body>
 
 <h1>🤖 AI 购物比价</h1>
-<div class="subtitle" id="timestamp">v28 · 粘贴链接 + 截图识别 → AI 排名</div>
+<div class="subtitle" id="timestamp">v29 · 粘贴链接 + 截图识别 → AI 排名</div>
 
 <!-- 安装横幅 -->
 <div id="installBanner">
@@ -318,6 +393,14 @@ h1 { font-size: 20px; text-align: center; margin-bottom: 2px; }
   <div class="snap-hint">支持连续上传 · 提取名称/价格/评价/设施等</div>
 </div>
 
+<!-- 批量导入截图 -->
+<input type="file" id="batchSnapInput" accept="image/*" multiple style="display:none" onchange="handleBatchImport(event)">
+<div class="batch-hero" onclick="document.getElementById('batchSnapInput').click()" id="batchBtn">
+  <div class="batch-icon">📸📸</div>
+  <div class="batch-title">批量导入多商品截图</div>
+  <div class="batch-desc">每个商品截完图停几秒→截下一个→回来全选→按时间自动分组</div>
+</div>
+
 <!-- 手动输入（折叠） -->
 <details class="manual-section" id="manualSection">
   <summary>✏️ 手动输入（途家等无法复制链接时使用）</summary>
@@ -357,6 +440,19 @@ h1 { font-size: 20px; text-align: center; margin-bottom: 2px; }
 </div>
 
 <div id="toast"></div>
+
+<!-- 批量导入弹窗 -->
+<div id="batchModal" class="batch-modal-overlay" style="display:none">
+  <div class="batch-modal-header">
+    <h3>📸 截图自动分组</h3>
+    <span class="batch-hint" id="batchHint">按截图时间间隔自动分组 · 每组 = 一个商品</span>
+  </div>
+  <div class="batch-groups" id="batchGroups"></div>
+  <div class="batch-actions">
+    <button class="btn-cancel" onclick="closeBatchModal()">取消</button>
+    <button class="btn-confirm" onclick="confirmBatchImport()">✅ 全部导入</button>
+  </div>
+</div>
 
 <script>
 // ============================================================
@@ -464,7 +560,7 @@ function init() {
   renderItems();
   updateButtons();
   document.getElementById('timestamp').textContent =
-    'v28 |  ' + (mode === 'pdd' ? '拼多多 · 淘宝 · 京东 · 抖音商城' : '途家 · 美团 · 去哪儿 · 智行 · 同程 · 飞猪') +
+    'v29 |  ' + (mode === 'pdd' ? '拼多多 · 淘宝 · 京东 · 抖音商城' : '途家 · 美团 · 去哪儿 · 智行 · 同程 · 飞猪') +
     '  |  ' + new Date().toLocaleDateString('zh-CN');
   if (aiResult) {
     document.getElementById('results').classList.add('show');
@@ -487,7 +583,7 @@ function updateModeUI() {
   document.getElementById('destInput').placeholder = mode === 'pdd' ? '商品名（如：蓝牙耳机）' : '目的地（如：大理）';
   document.getElementById('dateRow').classList.toggle('show', mode === 'hotel');
   document.getElementById('timestamp').textContent =
-    'v28 |  ' + (mode === 'pdd' ? '拼多多 · 淘宝 · 京东 · 抖音商城' : '途家 · 美团 · 去哪儿 · 智行 · 同程 · 飞猪') +
+    'v29 |  ' + (mode === 'pdd' ? '拼多多 · 淘宝 · 京东 · 抖音商城' : '途家 · 美团 · 去哪儿 · 智行 · 同程 · 飞猪') +
     '  |  ' + new Date().toLocaleDateString('zh-CN');
   renderDepthFields();
 }
@@ -823,6 +919,171 @@ function readImageAsBase64(file, maxWidth, quality) {
 }
 
 // ============================================================
+// 📸📸 批量导入截图 — 时间分组
+// ============================================================
+let batchGroups = [];  // { files: File[], thumbs: [base64dataUrl,...], name, price, platform }
+
+async function handleBatchImport(event) {
+  const files = Array.from(event.target.files);
+  if (files.length === 0) { event.target.value = ''; return; }
+  if (files.length < 2) {
+    toast('📸 单张截图请用上方「上传截图自动识别」', true);
+    event.target.value = ''; return;
+  }
+
+  // Sort by lastModified (capture time)
+  files.sort((a, b) => a.lastModified - b.lastModified);
+
+  // Group by time gap (45 seconds = new product)
+  const GAP_MS = 45000;
+  batchGroups = [];
+  let currentGroup = [];
+
+  for (let i = 0; i < files.length; i++) {
+    if (currentGroup.length === 0) {
+      currentGroup.push(files[i]);
+    } else {
+      const gap = files[i].lastModified - currentGroup[currentGroup.length - 1].lastModified;
+      if (gap > GAP_MS) {
+        // New group
+        if (currentGroup.length > 0) batchGroups.push(currentGroup);
+        currentGroup = [files[i]];
+      } else {
+        currentGroup.push(files[i]);
+      }
+    }
+  }
+  if (currentGroup.length > 0) batchGroups.push(currentGroup);
+
+  // Generate thumbnails for each group (first 4 images, compressed)
+  const toaster = document.getElementById('toast');
+  toaster.textContent = `⏳ 正在处理 ${batchGroups.length} 组截图...`; toaster.className = 'show';
+
+  for (const group of batchGroups) {
+    group._thumbs = [];
+    for (let i = 0; i < Math.min(group.length, 4); i++) {
+      try {
+        const thumb = await compressImage(group[i], 150, 0.3);
+        group._thumbs.push(thumb);
+      } catch (e) {
+        // Skip failed thumbnails
+      }
+    }
+    // Pre-fill: try to detect platform from filename (sometimes screenshots contain app name in metadata)
+  }
+
+  toaster.className = '';
+
+  // Show the modal
+  renderBatchModal();
+  document.getElementById('batchModal').style.display = 'flex';
+  event.target.value = '';
+}
+
+function compressImage(file, maxWidth, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = function() {
+      const img = new Image();
+      img.onload = function() {
+        const canvas = document.createElement('canvas');
+        let w = img.width, h = img.height;
+        if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = reader.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderBatchModal() {
+  document.getElementById('batchHint').textContent =
+    `识别到 ${batchGroups.length} 组截图 · 每组 = 一个商品 · 请填写信息`;
+
+  const container = document.getElementById('batchGroups');
+  const pfms = currentPFMs();
+  const pfmOptions = pfms.map(p => `<option value="${p.name}">${p.emoji} ${p.name}</option>`).join('');
+
+  container.innerHTML = batchGroups.map((g, gi) => {
+    const firstFile = g[0];
+    const capTime = new Date(firstFile.lastModified);
+    const timeStr = capTime.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+
+    // Render thumbnails
+    let thumbsHTML = g._thumbs.map(t => `<img src="${t}" alt="">`).join('');
+    if (g.length > 4) {
+      thumbsHTML += `<div class="more-count">+${g.length - 4}</div>`;
+    }
+
+    return `
+    <div class="batch-group-card">
+      <div class="group-label">
+        <span>📦 商品 ${gi + 1} · ${timeStr} · ${g.length}张截图</span>
+      </div>
+      <div class="group-thumbs">${thumbsHTML}</div>
+      <div class="group-inputs">
+        <input class="gname" id="bgname_${gi}" placeholder="商品/房源名称" autocomplete="off">
+        <input class="gprice" id="bgprice_${gi}" type="number" placeholder="¥价格">
+        <select class="gpfm" id="bgpfm_${gi}"><option value="">平台</option>${pfmOptions}</select>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function confirmBatchImport() {
+  let imported = 0;
+  for (let gi = 0; gi < batchGroups.length; gi++) {
+    const name = (document.getElementById('bgname_' + gi)?.value || '').trim();
+    const price = parseInt(document.getElementById('bgprice_' + gi)?.value || '0');
+    const platform = document.getElementById('bgpfm_' + gi)?.value || '';
+
+    if (!name) continue;
+    if (!price || price <= 0) continue;
+
+    const group = batchGroups[gi];
+    // Store thumbnails (max 5) as base64 data URLs
+    const thumbs = group._thumbs.slice(0, 5);
+
+    items.unshift({
+      id: Date.now() + gi,  // Ensure unique IDs even within same ms
+      name: name.substring(0, 60),
+      price: price,
+      platform: platform || '',
+      link: '',
+      score: null,
+      time: new Date().toISOString(),
+      mode: mode,
+      checkin: mode === 'hotel' ? checkin : null,
+      checkout: mode === 'hotel' ? checkout : null,
+      nights: mode === 'hotel' ? nightsCount() : null,
+      thumbs: thumbs,
+      thumbCount: group.length,  // Total screenshot count
+    });
+    imported++;
+  }
+
+  if (imported === 0) {
+    toast('⚠️ 请至少为一个商品填写名称和价格', true);
+    return;
+  }
+
+  save(); renderItems(); updateButtons();
+  closeBatchModal();
+  toast(`✅ 已导入 ${imported} 个商品（共 ${batchGroups.reduce((s, g) => s + g.length, 0)} 张截图）`);
+}
+
+function closeBatchModal() {
+  document.getElementById('batchModal').style.display = 'none';
+  batchGroups = [];
+}
+
+// ============================================================
 // 手动添加
 // ============================================================
 function addManual() {
@@ -877,6 +1138,7 @@ function renderItems() {
       ${h.checkin && h.checkout ? `<div style="font-size:11px;color:var(--accent);margin-top:3px">📅 ${h.checkin} → ${h.checkout} · ${h.nights||'?'}晚</div>` : ''}
       ${depth.detBadReview ? `<div style="font-size:10px;color:var(--red);margin-top:2px">⚠️ ${depth.detBadReview}</div>` : ''}
       ${h.link ? `<div class="h-link">🔗 ${h.link.substring(0, 50)}...</div>` : ''}
+      ${h.thumbs && h.thumbs.length ? `<div class="card-thumbs">${h.thumbs.map(t => `<img src="${t}" alt="">`).join('')}${h.thumbCount > h.thumbs.length ? `<span style="font-size:10px;color:var(--sub);padding:4px">+${h.thumbCount - h.thumbs.length}</span>` : ''}</div>` : ''}
     </div>`;
   }).join('');
 }
@@ -991,6 +1253,7 @@ function renderRanked(scored) {
       </div>
       ${h.reasons.length ? `<div style="font-size:12px;color:var(--green);margin-top:4px">✅ ${h.reasons.join(' · ')}</div>` : ''}
       ${h.concerns.length ? `<div style="font-size:12px;color:var(--red);margin-top:2px">⚠️ ${h.concerns.join(' · ')}</div>` : ''}
+      ${h.thumbs && h.thumbs.length ? `<div class="card-thumbs">${h.thumbs.map(t => `<img src="${t}" alt="">`).join('')}${h.thumbCount > h.thumbs.length ? `<span style="font-size:10px;color:var(--sub);padding:4px">+${h.thumbCount - h.thumbs.length}</span>` : ''}</div>` : ''}
     </div>`;
   }).join('');
   document.getElementById('results').classList.add('show');
@@ -1155,7 +1418,7 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then(regs => {
     regs.forEach(r => r.unregister());
   }).finally(() => {
-    navigator.serviceWorker.register('sw.js?v=27').catch(() => {});
+    navigator.serviceWorker.register('sw.js?v=29').catch(() => {});
   });
 }
 
