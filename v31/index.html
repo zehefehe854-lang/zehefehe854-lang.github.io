@@ -384,7 +384,7 @@ h1 { font-size: 20px; text-align: center; margin-bottom: 2px; }
 <body>
 
 <h1>🤖 AI 购物比价</h1>
-<div class="subtitle" id="timestamp">v30 · 粘贴链接 + 截图识别 → AI 排名</div>
+<div class="subtitle" id="timestamp">v31 · 粘贴链接 + 截图识别 → AI 排名</div>
 
 <!-- 安装横幅 -->
 <div id="installBanner">
@@ -426,21 +426,25 @@ h1 { font-size: 20px; text-align: center; margin-bottom: 2px; }
 </div>
 
 <!-- 截图上传 -->
-<input type="file" id="snapInput" accept="image/*" style="display:none" onchange="processScreenshot(event)">
-<div class="snap-hero" onclick="document.getElementById('snapInput').click()" id="snapBtn">
-  <div class="snap-icon">📸</div>
-  <div class="snap-title">上传截图自动识别</div>
-  <div class="snap-desc">途家/拼多多详情页截图 → AI 自动提取</div>
-  <div class="snap-hint">支持连续上传 · 提取名称/价格/评价/设施等</div>
-</div>
+<label for="snapInput" style="display:block;cursor:pointer;-webkit-tap-highlight-color:transparent">
+  <div class="snap-hero" id="snapBtn">
+    <div class="snap-icon">📸</div>
+    <div class="snap-title">上传截图自动识别</div>
+    <div class="snap-desc">途家/拼多多详情页截图 → AI 自动提取</div>
+    <div class="snap-hint">点击从相册选择 · AI 自动提取名称/价格</div>
+  </div>
+</label>
+<input type="file" id="snapInput" accept="image/png,image/jpeg,image/webp" style="position:absolute;opacity:0;width:0;height:0;overflow:hidden" onchange="processScreenshot(event)">
 
 <!-- 批量导入截图 -->
-<input type="file" id="batchSnapInput" accept="image/*" multiple style="display:none" onchange="handleBatchImport(event)">
-<div class="batch-hero" onclick="document.getElementById('batchSnapInput').click()" id="batchBtn">
-  <div class="batch-icon">📸📸</div>
-  <div class="batch-title">批量导入多商品截图</div>
-  <div class="batch-desc">每个商品截完图停几秒→截下一个→回来全选→按时间自动分组</div>
-</div>
+<label for="batchSnapInput" style="display:block;cursor:pointer;-webkit-tap-highlight-color:transparent">
+  <div class="batch-hero" id="batchBtn">
+    <div class="batch-icon">📸📸</div>
+    <div class="batch-title">批量导入多商品截图</div>
+    <div class="batch-desc">从相册多选截图 → 手动分组 → 一键导入</div>
+  </div>
+</label>
+<input type="file" id="batchSnapInput" accept="image/png,image/jpeg,image/webp" multiple style="position:absolute;opacity:0;width:0;height:0;overflow:hidden" onchange="handleBatchImport(event)">
 
 <!-- 手动输入（折叠） -->
 <details class="manual-section" id="manualSection">
@@ -619,7 +623,7 @@ function init() {
   renderItems();
   updateButtons();
   document.getElementById('timestamp').textContent =
-    'v30 |  ' + (mode === 'pdd' ? '拼多多 · 淘宝 · 京东 · 抖音商城' : '途家 · 美团 · 去哪儿 · 智行 · 同程 · 飞猪') +
+    'v31 |  ' + (mode === 'pdd' ? '拼多多 · 淘宝 · 京东 · 抖音商城' : '途家 · 美团 · 去哪儿 · 智行 · 同程 · 飞猪') +
     '  |  ' + new Date().toLocaleDateString('zh-CN');
   if (aiResult) {
     document.getElementById('results').classList.add('show');
@@ -642,7 +646,7 @@ function updateModeUI() {
   document.getElementById('destInput').placeholder = mode === 'pdd' ? '商品名（如：蓝牙耳机）' : '目的地（如：大理）';
   document.getElementById('dateRow').classList.toggle('show', mode === 'hotel');
   document.getElementById('timestamp').textContent =
-    'v30 |  ' + (mode === 'pdd' ? '拼多多 · 淘宝 · 京东 · 抖音商城' : '途家 · 美团 · 去哪儿 · 智行 · 同程 · 飞猪') +
+    'v31 |  ' + (mode === 'pdd' ? '拼多多 · 淘宝 · 京东 · 抖音商城' : '途家 · 美团 · 去哪儿 · 智行 · 同程 · 飞猪') +
     '  |  ' + new Date().toLocaleDateString('zh-CN');
   renderDepthFields();
 }
@@ -719,7 +723,7 @@ async function pasteListing() {
       document.getElementById('manPrice').focus();
       toast('📝 已识别名称，请补充价格');
     } else {
-      document.getElementById('manName').value = text.substring(0, 60);
+      document.getElementById('manName').value = '';
       document.getElementById('manPrice').value = '';
       document.getElementById('manPrice').focus();
       toast('🤔 未能自动识别，请手动补充', true);
@@ -1564,7 +1568,7 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then(regs => {
     regs.forEach(r => r.unregister());
   }).finally(() => {
-    navigator.serviceWorker.register('sw.js?v=30').catch(() => {});
+    navigator.serviceWorker.register('sw.js?v=31').catch(() => {});
   });
 }
 
