@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="购物比价">
+<meta name="theme-color" content="#0f172a">
+<link rel="manifest" href="manifest.json?v=16">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=16">
+<link rel="apple-touch-icon" href="icon-192.png?v=16">
+<meta name="mobile-web-app-capable" content="yes">
+<title>购物比价 · AI 深度分析</title>
+<style>
+:root {
+  --bg: #0f172a; --card: #1e293b; --input: #334155; --border: #334155;
+  --text: #f1f5f9; --sub: #94a3b8; --muted: #64748b;
+  --accent: #f59e0b; --green: #22c55e; --red: #ef4444; --blue: #3b82f6; --purple: #a855f7;
+  --r: 14px; --safe: env(safe-area-inset-bottom, 12px);
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+body {
+  font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg); color: var(--text); min-height: 100vh;
+  padding: 16px 16px calc(80px + var(--safe)); user-select: none;
+  max-width: 500px; margin: 0 auto;
+}
+h1 { font-size: 20px; text-align: center; margin-bottom: 2px; }
+.subtitle { text-align: center; font-size: 12px; color: var(--sub); margin-bottom: 12px; }
+
+/* 模式切换 */
+.mode-switch {
+  display: flex; gap: 0; margin-bottom: 16px;
+  background: var(--card); border-radius: var(--r); padding: 3px;
+}
+.mode-btn {
+  flex: 1; padding: 10px; font-size: 13px; font-weight: 700;
+  border: none; border-radius: calc(var(--r) - 3px); cursor: pointer;
+  background: transparent; color: var(--sub); transition: all .2s;
+}
+.mode-btn.active { background: var(--accent); color: #000; }
+
+/* 搜索栏 */
+.search-bar { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+.search-bar input {
+  flex: 1; min-width: 80px; padding: 12px 10px; font-size: 14px; background: var(--input);
+  border: 2px solid var(--border); border-radius: var(--r); color: var(--text); outline: none;
+}
+.search-bar input:focus { border-color: var(--accent); }
+.search-bar input[type="date"] {
+  flex: 0.8; min-width: 100px; color-scheme: dark;
+  padding: 12px 8px; font-size: 13px;
+}
+.search-bar button {
+  padding: 12px 16px; font-size: 14px; font-weight: 700; background: var(--accent);
+  color: #000; border: none; border-radius: var(--r); cursor: pointer;
+}
+.date-row { display: none; gap: 6px; margin-bottom: 8px; align-items: center; }
+.date-row.show { display: flex; }
+.date-row label { font-size: 11px; color: var(--sub); white-space: nowrap; }
+.date-row input[type="date"] {
+  flex: 1; padding: 10px 8px; font-size: 13px; background: var(--input);
+  border: 1px solid var(--border); border-radius: 8px; color: var(--text); outline: none;
+  color-scheme: dark;
+}
+.date-row button {
+  padding: 10px 12px; font-size: 12px; background: var(--blue); color: #fff;
+  border: none; border-radius: 8px; cursor: pointer; white-space: nowrap;
+}
+.late-check { display: flex; align-items: center; gap: 3px; cursor: pointer; }
+.late-check input { width: auto; accent-color: var(--accent); }
+.late-check.active { color: var(--accent); font-weight: 700; }
+
+/* 粘贴大卡片 — 主入口 */
+.paste-hero {
+  background: linear-gradient(135deg, #1e293b, #1a2332);
+  border: 2px dashed var(--accent); border-radius: var(--r);
+  padding: 24px 16px; margin-bottom: 12px; text-align: center; cursor: pointer;
+  transition: all .15s;
+}
+.paste-hero:active { background: rgba(245,158,11,0.08); transform: scale(.98); }
+.paste-icon { font-size: 40px; margin-bottom: 8px; }
+.paste-title { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+.paste-desc { font-size: 12px; color: var(--sub); margin-bottom: 10px; }
+.paste-platforms {
+  display: flex; flex-wrap: wrap; gap: 5px; justify-content: center;
+  font-size: 11px; color: var(--muted);
+}
+.paste-platforms span {
+  background: var(--input); padding: 2px 8px; border-radius: 10px;
+}
+
+/* 手动输入折叠区 */
+.manual-section {
+  background: var(--card); border-radius: var(--r); padding: 0 14px; margin-bottom: 12px;
+}
+.manual-section summary {
+  padding: 12px 0; font-size: 13px; font-weight: 600; color: var(--sub); cursor: pointer;
+}
+.manual-section .manual-row { margin-bottom: 12px; }
+
+/* 截图上传区 */
+.snap-hero {
+  background: linear-gradient(135deg, #1e293b, #1a2332);
+  border: 2px dashed var(--purple); border-radius: var(--r);
+  padding: 20px 16px; margin-bottom: 12px; text-align: center; cursor: pointer;
+  transition: all .15s;
+}
+.snap-hero:active { background: rgba(168,85,247,0.08); transform: scale(.98); }
+.snap-hero .snap-icon { font-size: 36px; margin-bottom: 6px; }
+.snap-hero .snap-title { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+.snap-hero .snap-desc { font-size: 12px; color: var(--sub); }
+.snap-hero .snap-hint { font-size: 10px; color: var(--muted); margin-top: 6px; }
+.snap-hero.processing {
+  border-style: solid; border-color: var(--accent); opacity: .7; pointer-events: none;
+}
+
+/* 手动输入 */
+.manual-row {
+  display: flex; gap: 6px; margin-bottom: 8px; align-items: center;
+}
+.manual-row input, .manual-row select {
+  padding: 10px 8px; font-size: 13px; background: var(--input);
+  border: 1px solid var(--border); border-radius: var(--r); color: var(--text); outline: none;
+}
+.manual-row input:focus { border-color: var(--accent); }
+.manual-row .name-inp { flex: 2.5; }
+.manual-row .price-inp { flex: 1; }
+.manual-row .pfm-sel { flex: 1.5; font-size: 11px; }
+.manual-row .add-btn {
+  padding: 10px 14px; font-size: 14px; font-weight: 700; background: var(--accent);
+  color: #000; border: none; border-radius: var(--r); cursor: pointer;
+}
+
+/* 深度分析字段 */
+.depth-section { margin-bottom: 10px; }
+.depth-section summary { cursor: pointer; padding: 4px 0; font-size: 12px; color: var(--sub); }
+.depth-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+.depth-fields select, .depth-fields input {
+  padding: 8px; font-size: 12px; background: var(--input);
+  border: 1px solid var(--border); border-radius: 8px; color: var(--text); outline: none;
+}
+.depth-fields .full { grid-column: 1/-1; }
+
+/* 卡片 */
+.hotel-list { display: flex; flex-direction: column; gap: 10px; }
+.card {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--r);
+  padding: 14px; transition: all .2s;
+}
+.card.best { border-color: var(--accent); border-width: 2px; }
+.card .top-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.card .h-name { font-size: 15px; font-weight: 600; flex: 1; line-height: 1.3; }
+.card .h-price { font-size: 18px; font-weight: 700; color: var(--accent); white-space: nowrap; }
+.card .h-price small { font-size: 11px; color: var(--sub); }
+.card .h-meta { font-size: 11px; color: var(--sub); margin-top: 6px; display: flex; gap: 10px; flex-wrap: wrap; }
+.card .h-pfm {
+  font-size: 10px; padding: 2px 8px; border-radius: 10px;
+  background: rgba(59,130,246,0.15); color: var(--blue); display: inline-block;
+}
+.card .h-del {
+  float: right; background: none; border: none; color: var(--muted);
+  font-size: 18px; cursor: pointer; padding: 2px 6px;
+}
+.card .depth-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; font-size: 10px; }
+.card .depth-tags span { padding: 2px 6px; border-radius: 6px; background: rgba(255,255,255,0.05); }
+.card .h-link { font-size: 11px; color: var(--blue); margin-top: 4px; word-break: break-all; }
+
+/* 排名区 */
+.results { display: none; margin-top: 20px; }
+.results.show { display: block; }
+.results h2 { font-size: 18px; margin-bottom: 12px; text-align: center; }
+.rank-badge {
+  display: inline-block; width: 24px; height: 24px; border-radius: 50%;
+  text-align: center; line-height: 24px; font-size: 13px; font-weight: 700; margin-right: 6px;
+}
+.r1 { background: var(--accent); color: #000; } .r2 { background: #94a3b8; color: #fff; } .r3 { background: #cd7f32; color: #fff; }
+
+/* 设置面板 */
+.settings-panel {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--r);
+  padding: 0; margin-bottom: 14px; max-height: 0; overflow: hidden;
+  transition: max-height .3s, padding .3s;
+}
+.settings-panel.show { max-height: 400px; padding: 14px; }
+.settings-panel h4 { font-size: 14px; margin-bottom: 8px; }
+.settings-inner { }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.ai-btn {
+  flex: 1; min-width: 80px; padding: 10px 12px; font-size: 12px; font-weight: 700;
+  border: none; border-radius: 8px; cursor: pointer;
+}
+.ai-btn.copy { background: var(--purple); color: #fff; }
+.ai-btn.open { background: var(--blue); color: #fff; }
+.ai-btn.import { background: var(--green); color: #000; }
+
+/* API Key 输入 */
+.api-key-row {
+  display: flex; gap: 6px; margin-bottom: 6px; align-items: center;
+}
+.api-key-row input {
+  flex: 1; padding: 10px; font-size: 12px; background: var(--input);
+  border: 1px solid var(--border); border-radius: 8px; color: var(--text); outline: none;
+  font-family: monospace;
+}
+.api-key-row input:focus { border-color: var(--purple); }
+.api-key-row button {
+  padding: 10px 12px; font-size: 11px; background: var(--input); color: var(--text);
+  border: 1px solid var(--border); border-radius: 8px; cursor: pointer; white-space: nowrap;
+}
+
+/* AI 结果区 */
+.ai-result {
+  background: var(--card); border: 1px solid var(--accent); border-radius: var(--r);
+  padding: 14px; margin-top: 12px; font-size: 13px; line-height: 1.6; white-space: pre-wrap;
+  max-height: 60vh; overflow-y: auto; display: none;
+}
+.ai-result.show { display: block; }
+.ai-loading {
+  display: none; text-align: center; padding: 16px; color: var(--accent);
+  font-size: 14px; font-weight: 600;
+}
+.ai-loading.show { display: block; }
+.ai-loading .dots::after {
+  content: ''; animation: dots 1.5s steps(4, end) infinite;
+}
+@keyframes dots {
+  0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } 100% { content: ''; }
+}
+
+/* 底部 */
+.bottom {
+  position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg);
+  padding: 10px 16px calc(10px + var(--safe)); border-top: 1px solid var(--border);
+  display: flex; gap: 10px; z-index: 10; max-width: 500px; margin: 0 auto;
+}
+.bottom .btn {
+  flex: 1; padding: 14px; font-size: 15px; font-weight: 700;
+  border: none; border-radius: var(--r); cursor: pointer;
+}
+.bottom .btn-rank { background: var(--accent); color: #000; flex: 2; }
+.bottom .btn-clear { background: var(--input); color: var(--sub); flex: 0.6; }
+
+/* Toast */
+#toast {
+  position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+  padding: 10px 24px; border-radius: 20px; font-size: 14px; font-weight: 600;
+  z-index: 999; opacity: 0; transition: opacity .3s; pointer-events: none;
+  background: var(--green); color: #fff;
+}
+#toast.show { opacity: 1; } #toast.warn { background: var(--red); }
+
+.empty { text-align: center; padding: 30px; color: var(--muted); font-size: 14px; }
+
+/* 安装横幅 */
+#installBanner {
+  display: none; background: linear-gradient(135deg,#1e293b,#1a1f2e);
+  border: 1px solid var(--accent); border-radius: var(--r);
+  padding: 12px 16px; margin-bottom: 14px; text-align: center; gap: 12px; flex-wrap: wrap;
+}
+#installBanner button {
+  padding: 10px 24px; font-size: 14px; font-weight: 700;
+  background: var(--accent); color: #000; border: none; border-radius: 20px; cursor: pointer;
+}
+</style>
+</head>
+<body>
+
+<h1>🤖 AI 购物比价</h1>
+<div class="subtitle" id="timestamp">v28 · 粘贴链接 + 截图识别 → AI 排名</div>
+
+<!-- 安装横幅 -->
+<div id="installBanner">
+  <span style="font-size:14px;font-weight:600">📲 添加到桌面，随时打开使用</span>
+  <button onclick="installPWA()">安装</button>
+</div>
+
+<!-- 模式切换 -->
+<div class="mode-switch">
+  <button class="mode-btn active" onclick="switchMode('hotel')" id="modeHotel">🏨 酒店民宿</button>
+  <button class="mode-btn" onclick="switchMode('pdd')" id="modePDD">🛒 拼多多</button>
+</div>
+
+<!-- 搜索栏 -->
+<div class="search-bar">
+  <input id="destInput" placeholder="目的地/商品名" autocomplete="off">
+  <button onclick="updateDest()">🔍</button>
+</div>
+
+<!-- 日期选择（酒店模式） -->
+<div class="date-row" id="dateRow">
+  <label>📅 入住</label>
+  <input type="date" id="checkinDate">
+  <label>退房</label>
+  <input type="date" id="checkoutDate">
+  <button onclick="setDates()">确定</button>
+  <label class="late-check" id="lateCheckLabel"><input type="checkbox" id="lateNight" onchange="toggleLateNight()"> 凌晨</label>
+</div>
+
+<!-- 主入口：粘贴链接 -->
+<div class="paste-hero" onclick="pasteListing()" id="pasteBtn">
+  <div class="paste-icon">📋</div>
+  <div class="paste-title">粘贴商品/房源链接</div>
+  <div class="paste-desc">在 App 中复制链接 → 回到这里点击 → 自动识别</div>
+  <div class="paste-platforms">
+    <span>🏡途家</span><span>🟡美团</span><span>🐫去哪儿</span><span>🚅智行</span><span>✈️同程</span><span>🐷飞猪</span>
+    <span>📦拼多多</span><span>🛍淘宝</span><span>🐕京东</span><span>🎵抖音</span>
+  </div>
+</div>
+
+<!-- 截图上传 -->
+<input type="file" id="snapInput" accept="image/*" capture="environment" style="display:none" onchange="processScreenshot(event)">
+<div class="snap-hero" onclick="document.getElementById('snapInput').click()" id="snapBtn">
+  <div class="snap-icon">📸</div>
+  <div class="snap-title">上传截图自动识别</div>
+  <div class="snap-desc">途家/拼多多详情页截图 → AI 自动提取</div>
+  <div class="snap-hint">支持连续上传 · 提取名称/价格/评价/设施等</div>
+</div>
+
+<!-- 手动输入（折叠） -->
+<details class="manual-section" id="manualSection">
+  <summary>✏️ 手动输入（途家等无法复制链接时使用）</summary>
+  <div class="manual-row">
+    <input class="name-inp" id="manName" placeholder="名称">
+    <input class="price-inp" id="manPrice" type="number" placeholder="¥价格">
+    <select class="pfm-sel" id="manPfm"><option value="">平台</option></select>
+    <button class="add-btn" onclick="addManual()">+</button>
+  </div>
+</details>
+
+<!-- 深度分析字段 -->
+<details class="depth-section" id="depthSection">
+  <summary>🔍 深度分析字段（点击展开 — 填完信息后帮助排名更准）</summary>
+  <div class="depth-fields" id="depthFields"></div>
+</details>
+
+<!-- 列表 -->
+<div class="hotel-list" id="itemList">
+  <div class="empty">👆 先点平台按钮跳转搜索<br>找到后复制链接回来粘贴</div>
+</div>
+
+<!-- AI 分析状态（排名时自动显示） -->
+<div class="ai-loading" id="aiLoading">🤖 Claude 正在深度分析中<span class="dots"></span></div>
+<div class="ai-result" id="aiResult"></div>
+
+<!-- 排名结果 -->
+<div class="results" id="results">
+  <h2>🏆 排名结果</h2>
+  <div id="rankedList"></div>
+</div>
+
+<!-- 底部 -->
+<div class="bottom">
+  <button class="btn btn-rank" id="rankBtn" disabled onclick="rank()">📊 双栈排名</button>
+  <button class="btn btn-clear" onclick="clearAll()">清空</button>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ============================================================
+// 版本自检 — 从远程 version.json 获取最新版本号，绕过 CDN 缓存
+// ============================================================
+(function checkVersion() {
+  const loadedVersion = parseInt((document.getElementById('timestamp')?.textContent?.match(/v(\d+)/) || [])[1]) || 0;
+  if (!loadedVersion) return;
+  // Fetch from versioned subdirectory (bypasses CDN cache on root path)
+  var verJsonUrl = location.pathname.replace(/\/v\d+\//, '/v' + loadedVersion + '/');
+  if (verJsonUrl === location.pathname) verJsonUrl = '/version.json';
+  else verJsonUrl = verJsonUrl.replace(/\/[^\/]*$/, '/version.json');
+  fetch(verJsonUrl + '?t=' + Date.now(), { cache: 'no-store' })
+    .then(r => r.ok ? r.json() : Promise.reject())
+    .then(data => {
+      if (data.version && loadedVersion < data.version) {
+        // CDN-safe redirect: jump to versioned subdirectory (never cached by CDN)
+        var newPath = '/v' + data.version + '/' + location.search + location.hash;
+        location.replace(newPath);
+      }
+    })
+    .catch(() => {});
+})();
+
+// ============================================================
+// 数据 + 模式
+// ============================================================
+let mode = localStorage.getItem('hl_mode') || 'hotel';
+let dest = localStorage.getItem('hl_dest') || '';
+let checkin = localStorage.getItem('hl_checkin') || '';
+let checkout = localStorage.getItem('hl_checkout') || '';
+let lateNight = localStorage.getItem('hl_lateNight') === 'true';
+let items = JSON.parse(localStorage.getItem('hl_items') || '[]');
+let aiResult = localStorage.getItem('hl_ai_result') || '';
+
+const HOTEL_PFMS = [
+  { id:'tujia', name:'途家民宿', emoji:'🏡', scheme:'tujia',
+    url:(d,ci,co) => `https://m.tujia.com/search?searchText=${d}&checkInDate=${ci}&checkOutDate=${co}` },
+  { id:'meituan', name:'美团民宿', emoji:'🟡', scheme:'imeituan',
+    url:(d,ci,co) => `https://i.meituan.com/hotel/search?city=${d}&checkin=${ci}&checkout=${co}` },
+  { id:'qunar', name:'去哪儿', emoji:'🐫', scheme:'qunar',
+    url:(d,ci,co) => `https://touch.qunar.com/hotel/list?cityName=${d}&checkInDate=${ci}&checkOutDate=${co}` },
+  { id:'zhixing', name:'智行', emoji:'🚅', scheme:null,
+    url:(d,ci,co) => `https://m.ctrip.com/hotel/list?city=${d}&checkin=${ci}&checkout=${co}` },
+  { id:'tongcheng', name:'同程旅行', emoji:'✈️', scheme:'tongcheng',
+    url:(d,ci,co) => `https://m.ly.com/hotel/search?cityname=${d}&checkin=${ci}&checkout=${co}` },
+  { id:'fliggy', name:'飞猪旅行', emoji:'🐷', scheme:null,
+    url:(d,ci,co) => `https://market.fliggy.com/hotel/simpleSearch.htm?city=${d}&checkIn=${ci}&checkOut=${co}` },
+];
+
+const PDD_PFMS = [
+  { id:'pdd', name:'拼多多', emoji:'📦', scheme:'pinduoduo',
+    url:(d) => `https://mobile.yangkeduo.com/search_result.html?search_key=${d}` },
+  { id:'taobao', name:'淘宝', emoji:'🛍', scheme:'taobao',
+    url:(d) => `https://s.taobao.com/search?q=${d}&sort=sale-desc` },
+  { id:'jd', name:'京东', emoji:'🐕', scheme:'openapp.jdmobile',
+    url:(d) => `https://m.jd.com/search?keyword=${d}` },
+  { id:'douyin', name:'抖音商城', emoji:'🎵', scheme:'snssdk1128',
+    url:(d) => `https://haohuo.jinritemai.com/views/search?keyword=${d}` },
+];
+
+function currentPFMs() { return mode === 'pdd' ? PDD_PFMS : HOTEL_PFMS; }
+
+// 深度字段配置
+const HOTEL_DEPTH = [
+  { id:'detPhoto', label:'📷 照片质量', type:'select', opts:[['',''],['real','✅ 大量实拍图'],['mixed','⚠️ 精修+实拍混合'],['edited','❌ 仅效果图']] },
+  { id:'detReview', label:'📝 评价质量', type:'select', opts:[['',''],['rich','✅ 有实质内容'],['mixed','⚠️ 好坏参半'],['poor','❌ 多人反映问题']] },
+  { id:'detHost', label:'👤 房东/服务', type:'select', opts:[['',''],['super','✅ 超赞房东'],['normal','➖ 正常'],['bad','❌ 服务差']] },
+  { id:'detClean', label:'🧹 卫生状况', type:'select', opts:[['',''],['clean','✅ 多人夸干净'],['mixed','⚠️ 偶有投诉'],['dirty','❌ 卫生差评多']] },
+  { id:'detPhotoCount', label:'🖼 照片数量', type:'number' },
+  { id:'detCancel', label:'📅 取消政策', type:'select', opts:[['',''],['flex','✅ 免费取消'],['moderate','➖ 中等'],['strict','❌ 不可取消']] },
+  { id:'detBadReview', label:'⚠️ 差评关键词(逗号分隔)', type:'text', full:true },
+];
+
+const PDD_DEPTH = [
+  { id:'detMaterial', label:'🧵 材质/成分', type:'select', opts:[['',''],['clear','✅ 标注清晰'],['vague','⚠️ 描述模糊'],['none','❌ 未标注']] },
+  { id:'detRealPhotos', label:'📷 实拍图', type:'select', opts:[['',''],['many','✅ 大量实拍+视频'],['some','⚠️ 少量实拍'],['none','❌ 仅精修图']] },
+  { id:'detReviews', label:'📝 评价真实性', type:'select', opts:[['',''],['real','✅ 评价自然多样'],['suspicious','⚠️ 有刷单嫌疑'],['fake','❌ 明显刷评']] },
+  { id:'detStore', label:'🏪 店铺质量', type:'select', opts:[['',''],['good','✅ 老店/高DSR/有授权'],['normal','➖ 正常'],['bad','❌ 新店/低评分']] },
+  { id:'detSpecs', label:'📐 参数完整度', type:'select', opts:[['',''],['full','✅ 参数齐全'],['partial','⚠️ 部分缺失'],['empty','❌ 无参数表']] },
+  { id:'detService', label:'🛡 服务保障', type:'select', opts:[['',''],['full','✅ 退货包运费+其他'],['basic','➖ 基本保障'],['none','❌ 无保障']] },
+  { id:'detBadReview', label:'⚠️ 差评关键词(逗号分隔)', type:'text', full:true },
+];
+
+function currentDepth() { return mode === 'pdd' ? PDD_DEPTH : HOTEL_DEPTH; }
+
+// ============================================================
+// 初始化
+// ============================================================
+function init() {
+  document.getElementById('destInput').value = dest;
+  document.getElementById('checkinDate').value = checkin;
+  document.getElementById('checkoutDate').value = checkout;
+  document.getElementById('lateNight').checked = lateNight;
+  updateLateNightUI();
+  // API Key：首次使用弹出输入框，之后保存在 localStorage
+  // 注意：Key 仅存储在你的手机浏览器中，不会上传到任何服务器（除了直接调用 Anthropic API）
+  if (!localStorage.getItem('hl_api_key')) {
+    const key = prompt('🔑 请输入 Anthropic API Key（用于 AI 深度分析）：\n\nKey 仅保存在本机，不会上传到任何第三方。\n之后可在排名结果区底部修改。\n\n（跳过则不启用 AI 分析）', '');
+    if (key && key.trim()) {
+      localStorage.setItem('hl_api_key', key.trim());
+    }
+  }
+  updateModeUI();
+  renderItems();
+  updateButtons();
+  document.getElementById('timestamp').textContent =
+    'v28 |  ' + (mode === 'pdd' ? '拼多多 · 淘宝 · 京东 · 抖音商城' : '途家 · 美团 · 去哪儿 · 智行 · 同程 · 飞猪') +
+    '  |  ' + new Date().toLocaleDateString('zh-CN');
+  if (aiResult) {
+    document.getElementById('results').classList.add('show');
+    document.getElementById('rankedList').innerHTML = aiResult;
+  }
+}
+
+function switchMode(m) {
+  mode = m; localStorage.setItem('hl_mode', mode);
+  updateModeUI();
+  document.getElementById('manPfm').innerHTML = '<option value="">平台</option>' +
+    currentPFMs().map(p => `<option>${p.name}</option>`).join('');
+  renderDepthFields();
+  toast(m === 'pdd' ? '🛒 拼多多购物模式' : '🏨 酒店民宿模式');
+}
+
+function updateModeUI() {
+  document.getElementById('modeHotel').classList.toggle('active', mode === 'hotel');
+  document.getElementById('modePDD').classList.toggle('active', mode === 'pdd');
+  document.getElementById('destInput').placeholder = mode === 'pdd' ? '商品名（如：蓝牙耳机）' : '目的地（如：大理）';
+  document.getElementById('dateRow').classList.toggle('show', mode === 'hotel');
+  document.getElementById('timestamp').textContent =
+    'v28 |  ' + (mode === 'pdd' ? '拼多多 · 淘宝 · 京东 · 抖音商城' : '途家 · 美团 · 去哪儿 · 智行 · 同程 · 飞猪') +
+    '  |  ' + new Date().toLocaleDateString('zh-CN');
+  renderDepthFields();
+}
+
+function setDates() {
+  checkin = document.getElementById('checkinDate').value;
+  checkout = document.getElementById('checkoutDate').value;
+  localStorage.setItem('hl_checkin', checkin);
+  localStorage.setItem('hl_checkout', checkout);
+  if (checkin) {
+    const ci = new Date(checkin);
+    const co = new Date(checkout || checkin);
+    const nights = Math.max(1, Math.round((co - ci) / 86400000));
+    const suffix = lateNight ? ' 🌙凌晨入住' : '';
+    toast(`✅ ${nights}晚 · ${checkin} → ${checkout || '待定'}${suffix}`);
+  }
+}
+
+function renderDepthFields() {
+  document.getElementById('depthFields').innerHTML = currentDepth().map(f => {
+    if (f.type === 'text') return `<input id="${f.id}" placeholder="${f.label}" class="${f.full?'full':''}" style="padding:8px;font-size:12px;background:var(--input);border:1px solid var(--border);border-radius:8px;color:var(--text)">`;
+    if (f.type === 'number') return `<input id="${f.id}" type="number" placeholder="${f.label}" style="padding:8px;font-size:12px;background:var(--input);border:1px solid var(--border);border-radius:8px;color:var(--text)">`;
+    return `<select id="${f.id}" style="padding:8px;font-size:12px;background:var(--input);border:1px solid var(--border);border-radius:8px;color:var(--text)">${f.opts.map(o => `<option value="${o[0]}">${o[1]}</option>`).join('')}</select>`;
+  }).join('');
+}
+
+function updateDest() {
+  dest = document.getElementById('destInput').value.trim();
+  localStorage.setItem('hl_dest', dest);
+  toast('✅ 搜索词已更新');
+}
+
+function nightsCount() {
+  if (!checkin) return 1;
+  const ci = new Date(checkin);
+  const co = new Date(checkout || checkin);
+  return Math.max(1, Math.round((co - ci) / 86400000));
+}
+
+function toggleLateNight() {
+  lateNight = document.getElementById('lateNight').checked;
+  localStorage.setItem('hl_lateNight', lateNight);
+  updateLateNightUI();
+}
+
+function updateLateNightUI() {
+  const label = document.getElementById('lateCheckLabel');
+  label.classList.toggle('active', lateNight);
+}
+
+// ============================================================
+// 粘贴解析
+// ============================================================
+async function pasteListing() {
+  try {
+    const text = await navigator.clipboard.readText();
+    if (!text || text.length < 5) { toast('📋 请先在 App 中复制链接或分享文本', true); return; }
+    const parsed = parseListingText(text);
+    if (parsed.name && parsed.price) {
+      items.unshift({
+        id: Date.now(), name: parsed.name, price: parsed.price,
+        platform: parsed.platform || '', link: parsed.link || text,
+        score: parsed.score || null, time: new Date().toISOString(),
+        mode: mode,
+        checkin: mode === 'hotel' ? checkin : null,
+        checkout: mode === 'hotel' ? checkout : null,
+        nights: mode === 'hotel' ? nightsCount() : null,
+      });
+      save(); renderItems(); updateButtons();
+      toast(`✅ 已添加: ${parsed.name} ¥${parsed.price}`);
+    } else if (parsed.name) {
+      document.getElementById('manName').value = parsed.name;
+      document.getElementById('manPrice').value = '';
+      document.getElementById('manPrice').focus();
+      toast('📝 已识别名称，请补充价格');
+    } else {
+      document.getElementById('manName').value = text.substring(0, 60);
+      document.getElementById('manPrice').value = '';
+      document.getElementById('manPrice').focus();
+      toast('🤔 未能自动识别，请手动补充', true);
+    }
+  } catch (err) {
+    toast('⚠️ 无法读取剪贴板，请手动输入', true);
+  }
+}
+
+function parseListingText(text) {
+  let name = '', price = null, platform = '', link = '', score = null;
+
+  // Price patterns: ¥299, 299元, 299块, 299, ￥299, price:299
+  const pricePatterns = [
+    /[¥￥]\s*(\d+(?:\.\d{1,2})?)\s*(?:[\/每]|$)/,
+    /(\d+(?:\.\d{1,2})?)\s*[元块]\s*(?:[\/每]|$)/,
+    /[¥￥]\s*(\d+(?:\.\d{1,2})?)/,
+    /price[:\s]*(\d+(?:\.\d{1,2})?)/i,
+    /(\d+(?:\.\d{1,2})?)\s*[元块]/,
+  ];
+  for (const p of pricePatterns) { const m = text.match(p); if (m) { price = parseFloat(m[1]); break; } }
+
+  // URL extraction
+  const urlMatch = text.match(/https?:\/\/[^\s一-鿿]+/);
+  if (urlMatch) link = urlMatch[0];
+
+  // Platform detection from URL domain
+  const platformDomains = {
+    'yangkeduo': '拼多多', 'pinduoduo': '拼多多', 'mobile.yangkeduo': '拼多多',
+    'taobao': '淘宝', 'tmall': '淘宝',
+    'jd.com': '京东', 'm.jd': '京东',
+    'haohuo.jinritemai': '抖音商城', 'jinritemai': '抖音商城',
+    'tujia': '途家民宿',
+    'meituan': '美团民宿', 'i.meituan': '美团民宿',
+    'qunar': '去哪儿', 'touch.qunar': '去哪儿',
+    'ctrip': '智行', 'm.ctrip': '智行',
+    'ly.com': '同程旅行', 'm.ly': '同程旅行',
+    'fliggy': '飞猪旅行', 'market.fliggy': '飞猪旅行',
+  };
+  for (const [domain, label] of Object.entries(platformDomains)) {
+    if (link.includes(domain)) { platform = label; break; }
+  }
+
+  // Fallback: match platform name in text
+  if (!platform) {
+    for (const p of currentPFMs()) {
+      if (text.includes(p.name)) { platform = p.name; break; }
+    }
+  }
+
+  // Score: "4.8分" / "4.8评分" / "评分4.8"
+  const scoreMatch = text.match(/(\d\.\d)\s*(?:分|评分)|评分\s*(\d\.\d)/);
+  if (scoreMatch) score = parseFloat(scoreMatch[1] || scoreMatch[2]);
+
+  // Name extraction: first meaningful line
+  const lines = text.split(/[\n\r]+/).filter(l => {
+    const t = l.trim();
+    return t.length > 3 && !t.startsWith('http') && !t.match(/^[¥￥]\d/) && !/^(?:分享|来自|复制|链接|查看|打开)\b/.test(t);
+  });
+  if (lines.length > 0) {
+    name = lines[0].trim().substring(0, 60);
+    name = name.replace(/^(?:分享|来自|复制|链接|查看|打开|【.*?】)\s*/g, '');
+  }
+  if (!name) name = text.replace(/\s+/g, ' ').substring(0, 60);
+  // Clean common noise
+  name = name.replace(/^https?:\/\/\S+/, '').replace(/^\s+/, '');
+
+  return { name, price, platform, link, score };
+}
+
+// ============================================================
+// 📸 截图上传 + Vision 提取
+// ============================================================
+async function processScreenshot(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const apiKey = localStorage.getItem('hl_api_key');
+  if (!apiKey) {
+    const key = prompt('🔑 请输入 Anthropic API Key（用于图像识别）：\nKey 仅保存在本机。', '');
+    if (key && key.trim()) localStorage.setItem('hl_api_key', key.trim());
+    else { toast('需要 API Key 才能使用截图识别', true); event.target.value = ''; return; }
+  }
+
+  const snapBtn = document.getElementById('snapBtn');
+  snapBtn.classList.add('processing');
+  snapBtn.innerHTML = '<div class="snap-icon">⏳</div><div class="snap-title">AI 识别中...</div><div class="snap-desc">正在分析截图内容</div>';
+
+  try {
+    // Resize image if too large (max 1920px wide, compress quality)
+    const imgData = await readImageAsBase64(file, 1920, 0.7);
+
+    const prompt = buildVisionPrompt();
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-5-20250901',
+        max_tokens: 1024,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: imgData.type, media_type: imgData.mediaType, data: imgData.data } },
+            { type: 'text', text: prompt },
+          ],
+        }],
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || `HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+    const text = data.content?.[0]?.text || '';
+
+    // Parse JSON from response
+    const parsed = parseVisionResponse(text);
+    if (!parsed || !parsed.name) {
+      throw new Error('未能从截图中识别到有效信息，请确认截图包含详情页内容');
+    }
+
+    // Extract depth data
+    const depthVals = {};
+    if (parsed.photos) depthVals.detPhoto = parsed.photos;
+    if (parsed.photoCount) depthVals.detPhotoCount = parsed.photoCount;
+    if (parsed.reviewQuality) depthVals.detReview = parsed.reviewQuality;
+    if (parsed.hostQuality) depthVals.detHost = parsed.hostQuality;
+    if (parsed.cleanliness) depthVals.detClean = parsed.cleanliness;
+    if (parsed.cancelPolicy) depthVals.detCancel = parsed.cancelPolicy;
+    if (parsed.material) depthVals.detMaterial = parsed.material;
+    if (parsed.realPhotos) depthVals.detRealPhotos = parsed.realPhotos;
+    if (parsed.reviews) depthVals.detReviews = parsed.reviews;
+    if (parsed.storeReliability) depthVals.detStore = parsed.storeReliability;
+    if (parsed.specs) depthVals.detSpecs = parsed.specs;
+    if (parsed.services && Array.isArray(parsed.services)) {
+      depthVals.detService = parsed.services.length >= 3 ? 'full' : parsed.services.length >= 1 ? 'basic' : 'none';
+    }
+    if (parsed.notes) depthVals.detBadReview = parsed.notes;
+
+    // Create item
+    items.unshift({
+      id: Date.now(),
+      name: parsed.name.substring(0, 60),
+      price: parsed.price || 0,
+      platform: parsed.platform || (mode === 'pdd' ? '拼多多' : '途家民宿'),
+      link: '',
+      score: parsed.rating || null,
+      time: new Date().toISOString(),
+      mode: mode,
+      checkin: mode === 'hotel' ? checkin : null,
+      checkout: mode === 'hotel' ? checkout : null,
+      nights: mode === 'hotel' ? nightsCount() : null,
+      depth: depthVals,
+    });
+
+    save(); renderItems(); updateButtons();
+    const tags = Object.values(depthVals).filter(v => v).length;
+    toast(`✅ 已识别: ${parsed.name} ¥${parsed.price || '?'} (${tags}项深度数据)`);
+  } catch (e) {
+    toast('❌ ' + e.message, true);
+  } finally {
+    snapBtn.classList.remove('processing');
+    snapBtn.innerHTML = '<div class="snap-icon">📸</div><div class="snap-title">上传截图自动识别</div><div class="snap-desc">途家/拼多多详情页截图 → AI 自动提取</div><div class="snap-hint">支持连续上传 · 提取名称/价格/评价/设施等</div>';
+    event.target.value = '';
+  }
+}
+
+function buildVisionPrompt() {
+  if (mode === 'hotel') {
+    return `你是一个民宿/酒店分析专家。请从这张详情页截图中提取信息，返回纯JSON（不要markdown代码块）：
+
+{
+  "name": "房源名称（中文）",
+  "price": 每晚价格数字,
+  "rating": 评分数字或null,
+  "platform": "途家民宿" 或检测到的其他平台,
+  "photos": "real"或"edited"或"mixed" (real=大量实拍图, edited=仅精修效果图, mixed=混合),
+  "photoCount": 照片数量数字或null,
+  "reviewQuality": "rich"或"mixed"或"poor" (rich=评价有实质内容, mixed=好坏参半, poor=多人反映问题),
+  "hostQuality": "super"或"normal"或"bad" (super=超赞房东/评分很高, normal=正常, bad=服务差投诉多),
+  "cleanliness": "clean"或"ok"或"dirty",
+  "cancelPolicy": "flex"或"moderate"或"strict",
+  "notes": "差评关键词或值得注意的问题（中文逗号分隔，无则null）"
+}`;
+  } else {
+    return `你是一个电商商品分析专家。请从这张商品详情页截图中提取信息，返回纯JSON（不要markdown代码块）：
+
+{
+  "name": "商品名称（中文）",
+  "price": 价格数字（券后/拼单价优先）,
+  "rating": 评分数字或null,
+  "platform": "拼多多" 或检测到的其他平台,
+  "material": "clear"或"vague"或"none" (clear=材质/规格标注清晰, vague=描述模糊, none=完全没标注),
+  "realPhotos": "many"或"some"或"none" (many=有买家秀/实拍图/视频, some=少量实拍, none=仅精修图),
+  "reviews": "real"或"suspicious"或"fake" (real=评价自然多样, suspicious=有刷单嫌疑, fake=明显刷评),
+  "storeReliability": "good"或"normal"或"bad" (good=店铺资质好/评分高/有认证, bad=可疑),
+  "specs": "full"或"partial"或"empty" (full=参数齐全, partial=部分缺失, empty=无参数表),
+  "services": ["退货包运费", "假一赔十", ...] 服务标签数组,
+  "notes": "值得注意的问题（中文逗号分隔，无则null）"
+}`;
+  }
+}
+
+function parseVisionResponse(text) {
+  // Try direct JSON parse first
+  try {
+    text = text.trim();
+    // Strip markdown code blocks if present
+    text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '');
+    return JSON.parse(text);
+  } catch (e) {
+    // Try to extract JSON object from the text
+    const match = text.match(/\{[\s\S]*\}/);
+    if (match) {
+      try { return JSON.parse(match[0]); } catch (e2) {}
+    }
+    return null;
+  }
+}
+
+function readImageAsBase64(file, maxWidth, quality) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = function() {
+      // Get image type
+      const isPNG = file.type === 'image/png';
+      const mediaType = isPNG ? 'image/png' : 'image/jpeg';
+
+      // Resize using canvas
+      const img = new Image();
+      img.onload = function() {
+        const canvas = document.createElement('canvas');
+        let w = img.width, h = img.height;
+        if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL(isPNG ? 'image/png' : 'image/jpeg', quality);
+        const base64 = dataUrl.split(',')[1];
+        resolve({ data: base64, mediaType: mediaType, type: 'base64' });
+      };
+      img.onerror = reject;
+      img.src = reader.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// ============================================================
+// 手动添加
+// ============================================================
+function addManual() {
+  const name = document.getElementById('manName').value.trim();
+  const price = parseInt(document.getElementById('manPrice').value);
+  const platform = document.getElementById('manPfm').value;
+  if (!name) { toast('请输入名称', true); return; }
+  if (!price || price <= 0) { toast('请输入价格', true); return; }
+  const depth = {};
+  currentDepth().forEach(f => {
+    const el = document.getElementById(f.id);
+    if (el) depth[f.id] = el.value || null;
+  });
+  items.unshift({
+    id: Date.now(), name, price, platform, link: '', score: null,
+    time: new Date().toISOString(), depth, mode,
+    checkin: mode === 'hotel' ? checkin : null,
+    checkout: mode === 'hotel' ? checkout : null,
+    nights: mode === 'hotel' ? nightsCount() : null,
+  });
+  ['manName','manPrice','manPfm'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  currentDepth().forEach(f => { const el = document.getElementById(f.id); if (el) el.value = ''; });
+  save(); renderItems(); updateButtons();
+  toast('✅ 已添加');
+}
+
+// ============================================================
+// 渲染列表
+// ============================================================
+function renderItems() {
+  const list = document.getElementById('itemList');
+  const modeItems = items.filter(i => (i.mode || 'hotel') === mode);
+  if (modeItems.length === 0) {
+    list.innerHTML = '<div class="empty">👆 在 App 中复制商品/房源链接<br>回到这里点击上方卡片粘贴</div>';
+    return;
+  }
+  list.innerHTML = modeItems.map((h, i) => {
+    const depth = h.depth || {};
+    return `
+    <div class="card">
+      <div class="top-row">
+        <div class="h-name">${h.name}</div>
+        <div class="h-price">¥${h.price}<small>/${mode==='hotel'?'晚':'件'}</small></div>
+        <button class="h-del" onclick="del(${h.id})">×</button>
+      </div>
+      <div class="h-meta">
+        ${h.platform ? `<span class="h-pfm">${h.platform}</span>` : ''}
+        ${h.score ? `<span>⭐${h.score}</span>` : ''}
+        <span>${new Date(h.time).toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit'})}</span>
+      </div>
+      <div class="depth-tags">${renderDepthTags(depth)}</div>
+      ${h.checkin && h.checkout ? `<div style="font-size:11px;color:var(--accent);margin-top:3px">📅 ${h.checkin} → ${h.checkout} · ${h.nights||'?'}晚</div>` : ''}
+      ${depth.detBadReview ? `<div style="font-size:10px;color:var(--red);margin-top:2px">⚠️ ${depth.detBadReview}</div>` : ''}
+      ${h.link ? `<div class="h-link">🔗 ${h.link.substring(0, 50)}...</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function renderDepthTags(d) {
+  const tags = [];
+  if (mode === 'hotel') {
+    if (d.detPhoto==='real') tags.push('<span style="color:var(--green)">📷实拍</span>');
+    if (d.detPhoto==='edited') tags.push('<span style="color:var(--red)">📷精修</span>');
+    if (d.detReview==='rich') tags.push('<span style="color:var(--green)">📝好评实</span>');
+    if (d.detReview==='poor') tags.push('<span style="color:var(--red)">📝差评多</span>');
+    if (d.detHost==='super') tags.push('<span style="color:var(--green)">👤超赞房东</span>');
+    if (d.detHost==='bad') tags.push('<span style="color:var(--red)">👤服务差</span>');
+    if (d.detClean==='clean') tags.push('<span style="color:var(--green)">🧹干净</span>');
+    if (d.detClean==='dirty') tags.push('<span style="color:var(--red)">🧹脏</span>');
+    if (d.detCancel==='flex') tags.push('<span style="color:var(--green)">📅免费取消</span>');
+    if (d.detCancel==='strict') tags.push('<span style="color:var(--red)">📅不可取消</span>');
+    if (d.detPhotoCount) tags.push(`<span style="color:var(--sub)">🖼${d.detPhotoCount}张</span>`);
+  } else {
+    if (d.detMaterial==='clear') tags.push('<span style="color:var(--green)">🧵材质清晰</span>');
+    if (d.detMaterial==='none') tags.push('<span style="color:var(--red)">🧵未标注材质</span>');
+    if (d.detRealPhotos==='many') tags.push('<span style="color:var(--green)">📷多实拍</span>');
+    if (d.detRealPhotos==='none') tags.push('<span style="color:var(--red)">📷无实拍</span>');
+    if (d.detReviews==='real') tags.push('<span style="color:var(--green)">📝评价真实</span>');
+    if (d.detReviews==='fake') tags.push('<span style="color:var(--red)">📝疑似刷评</span>');
+    if (d.detStore==='good') tags.push('<span style="color:var(--green)">🏪靠谱店铺</span>');
+    if (d.detStore==='bad') tags.push('<span style="color:var(--red)">🏪店铺可疑</span>');
+    if (d.detSpecs==='full') tags.push('<span style="color:var(--green)">📐参数齐全</span>');
+    if (d.detService==='full') tags.push('<span style="color:var(--green)">🛡保障齐全</span>');
+    if (d.detService==='none') tags.push('<span style="color:var(--red)">🛡无保障</span>');
+  }
+  return tags.join('');
+}
+
+function del(id) { items = items.filter(h => h.id !== id); save(); renderItems(); updateButtons(); }
+
+function clearAll() {
+  if (!confirm('清空所有？')) return;
+  items = []; aiResult = '';
+  save(); localStorage.setItem('hl_ai_result', '');
+  renderItems(); updateButtons();
+  document.getElementById('results').classList.remove('show');
+  document.getElementById('aiResult').classList.remove('show');
+}
+
+// ============================================================
+// 本地排名
+// ============================================================
+function rank() {
+  const modeItems = items.filter(i => (i.mode || 'hotel') === mode);
+  if (modeItems.length < 2) { toast('至少2个才能对比', true); return; }
+  const prices = modeItems.map(h => h.price);
+  const minP = Math.min(...prices), maxP = Math.max(...prices);
+
+  const scored = modeItems.map(h => {
+    let s = 0; const reasons = [], concerns = []; const d = h.depth || {};
+    const priceScore = maxP > minP ? (1 - (h.price - minP)/(maxP - minP)) * 10 : 5;
+    s += priceScore * 0.20; if (h.price === minP) reasons.push('💰最低价');
+    if (h.score) { s += Math.min(10, h.score * 2) * 0.15; if (h.score >= 4.8) reasons.push('⭐高评分'); if (h.score < 4.3) concerns.push('评分偏低'); }
+
+    if (mode === 'hotel') {
+      if (d.detPhoto==='real') { s += 10*0.15; reasons.push('📷实拍图'); } else if (d.detPhoto==='edited') { s += 1*0.15; concerns.push('仅精修图'); } else s += 5*0.15;
+      if (d.detPhotoCount >= 30) { s += 1.5*0.15; reasons.push('照片丰富('+d.detPhotoCount+'张)'); }
+      if (d.detReview==='rich') { s += 10*0.15; reasons.push('📝评价有内容'); } else if (d.detReview==='poor') { s += 1*0.15; concerns.push('多人反映问题'); } else s += 5*0.15;
+      if (d.detHost==='super') { s += 10*0.10; reasons.push('👤超赞房东'); } else if (d.detHost==='bad') { s += 1*0.10; concerns.push('服务差'); } else s += 5*0.10;
+      if (d.detClean==='clean') { s += 10*0.10; reasons.push('🧹卫生好'); } else if (d.detClean==='dirty') { s += 1*0.10; concerns.push('卫生差'); } else s += 5*0.10;
+      if (d.detCancel==='flex') { s += 10*0.05; reasons.push('📅免费取消'); } else if (d.detCancel==='strict') { s += 2*0.05; concerns.push('不可取消'); } else s += 5*0.05;
+    } else {
+      if (d.detMaterial==='clear') { s += 10*0.15; reasons.push('🧵材质清晰'); } else if (d.detMaterial==='none') { s += 2*0.15; concerns.push('材质不明'); } else s += 5*0.15;
+      if (d.detRealPhotos==='many') { s += 10*0.15; reasons.push('📷多实拍'); } else if (d.detRealPhotos==='none') { s += 1*0.15; concerns.push('无实拍'); } else s += 5*0.15;
+      if (d.detReviews==='real') { s += 10*0.15; reasons.push('📝评价真实'); } else if (d.detReviews==='fake') { s += 1*0.15; concerns.push('涉嫌刷评'); } else s += 5*0.15;
+      if (d.detStore==='good') { s += 10*0.10; reasons.push('🏪靠谱店铺'); } else if (d.detStore==='bad') { s += 2*0.10; concerns.push('店铺可疑'); } else s += 5*0.10;
+      if (d.detSpecs==='full') { s += 10*0.10; reasons.push('📐参数齐全'); } else if (d.detSpecs==='empty') { s += 2*0.10; concerns.push('无参数表'); } else s += 5*0.10;
+      if (d.detService==='full') { s += 10*0.10; reasons.push('🛡保障齐全'); } else if (d.detService==='none') { s += 2*0.10; concerns.push('无保障'); } else s += 5*0.10;
+    }
+
+    if (d.detBadReview) { const bads = d.detBadReview.split(/[,，]/).filter(Boolean); if (bads.length >= 3) { s -= 2; concerns.push('差评集中'); } else if (bads.length >= 1) { s -= 0.5; } }
+    const sameName = modeItems.filter(x => x.id !== h.id && x.name === h.name).length;
+    s += sameName * 2 * 0.05; if (sameName > 0) reasons.push('多平台有售');
+    const ageMin = (Date.now() - new Date(h.time).getTime()) / 60000;
+    if (ageMin < 10) { s += 10*0.05; reasons.push('🕐实时'); } else if (ageMin > 60) concerns.push('价格可能过期');
+    return { ...h, total: Math.round(s * 10) / 10, reasons: reasons.slice(0, 4), concerns: concerns.slice(0, 3), isCheapest: h.price === minP };
+  });
+
+  scored.sort((a, b) => b.total - a.total);
+  renderRanked(scored);
+
+  // 双栈执行：本地排名完成后，如果设置了 API Key，同时触发 AI 深度分析
+  const apiKey = localStorage.getItem('hl_api_key');
+  if (apiKey) {
+    document.getElementById('aiLoading').classList.add('show');
+    document.getElementById('aiResult').classList.remove('show');
+    runAIAnalysis(scored, apiKey);
+  }
+}
+
+function renderRanked(scored) {
+  const container = document.getElementById('rankedList');
+  container.innerHTML = scored.map((h, i) => {
+    const r = i + 1; const rc = r === 1 ? 'r1' : r === 2 ? 'r2' : r === 3 ? 'r3' : '';
+    return `
+    <div class="card ${r===1?'best':''}">
+      <div class="top-row">
+        <div class="h-name">${r<=3?`<span class="rank-badge ${rc}">${r}</span>`:''}${r===1?'👑 ':''}${h.name}</div>
+        <div class="h-price">¥${h.price}<small>/${mode==='hotel'?'晚':'件'}</small></div>
+      </div>
+      <div class="h-meta">
+        <span style="font-weight:700;color:var(--accent)">📊 ${h.total}分</span>
+        ${h.score ? `<span>⭐${h.score}</span>` : ''}
+        ${h.platform ? `<span class="h-pfm">${h.platform}</span>` : ''}
+        ${h.isCheapest ? '<span style="color:var(--green)">💰最低</span>' : ''}
+      </div>
+      ${h.reasons.length ? `<div style="font-size:12px;color:var(--green);margin-top:4px">✅ ${h.reasons.join(' · ')}</div>` : ''}
+      ${h.concerns.length ? `<div style="font-size:12px;color:var(--red);margin-top:2px">⚠️ ${h.concerns.join(' · ')}</div>` : ''}
+    </div>`;
+  }).join('');
+  document.getElementById('results').classList.add('show');
+  document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+  const hasApiKey = !!localStorage.getItem('hl_api_key');
+  toast(hasApiKey ? '✅ 排名完成！AI 深度分析进行中...' : '✅ 排名完成！（设置 API Key 可开启 AI 深度分析）');
+}
+
+// ============================================================
+// 🤖 AI 桥接
+// ============================================================
+function buildAIPrompt() {
+  const modeItems = items.filter(i => (i.mode || 'hotel') === mode);
+  if (modeItems.length === 0) return null;
+
+  const typeName = mode === 'pdd' ? '拼多多商品' : '酒店民宿';
+  const unitName = mode === 'pdd' ? '件' : '晚';
+
+  let prompt = `请帮我深度分析以下${modeItems.length}个${typeName}，做综合排名推荐。\n\n`;
+  prompt += `=== 候选${typeName}列表 ===\n\n`;
+
+  modeItems.forEach((h, i) => {
+    prompt += `## ${i + 1}. ${h.name}\n`;
+    prompt += `- 价格: ¥${h.price}/${unitName}\n`;
+    if (h.checkin && h.checkout) prompt += `- 入住: ${h.checkin} → 退房: ${h.checkout} · ${h.nights||'?'}晚\n`;
+    if (h.platform) prompt += `- 平台: ${h.platform}\n`;
+    if (h.score) prompt += `- 平台评分: ${h.score}\n`;
+    if (h.link) prompt += `- 链接: ${h.link}\n`;
+
+    const d = h.depth || {};
+    if (Object.values(d).some(v => v)) {
+      prompt += `- 深度信息:\n`;
+      if (mode === 'hotel') {
+        if (d.detPhoto) prompt += `  照片: ${d.detPhoto==='real'?'大量实拍':d.detPhoto==='mixed'?'精修+实拍混合':'仅效果图'}\n`;
+        if (d.detPhotoCount) prompt += `  照片数量: ${d.detPhotoCount}张\n`;
+        if (d.detReview) prompt += `  评价质量: ${d.detReview==='rich'?'有实质内容':d.detReview==='mixed'?'好坏参半':'多人反映问题'}\n`;
+        if (d.detHost) prompt += `  房东: ${d.detHost==='super'?'超赞房东':d.detHost==='bad'?'服务差':'正常'}\n`;
+        if (d.detClean) prompt += `  卫生: ${d.detClean==='clean'?'干净':d.detClean==='dirty'?'有差评':'一般'}\n`;
+        if (d.detCancel) prompt += `  取消政策: ${d.detCancel==='flex'?'免费取消':d.detCancel==='strict'?'不可取消':'中等'}\n`;
+      } else {
+        if (d.detMaterial) prompt += `  材质: ${d.detMaterial==='clear'?'标注清晰':d.detMaterial==='vague'?'描述模糊':'未标注'}\n`;
+        if (d.detRealPhotos) prompt += `  实拍图: ${d.detRealPhotos==='many'?'大量实拍+视频':d.detRealPhotos==='some'?'少量实拍':'仅精修图'}\n`;
+        if (d.detReviews) prompt += `  评价: ${d.detReviews==='real'?'自然多样':d.detReviews==='suspicious'?'有刷单嫌疑':'明显刷评'}\n`;
+        if (d.detStore) prompt += `  店铺: ${d.detStore==='good'?'靠谱':d.detStore==='bad'?'可疑':'正常'}\n`;
+        if (d.detSpecs) prompt += `  参数: ${d.detSpecs==='full'?'齐全':d.detSpecs==='partial'?'部分缺失':'无参数表'}\n`;
+        if (d.detService) prompt += `  服务: ${d.detService==='full'?'保障齐全':d.detService==='basic'?'基本保障':'无保障'}\n`;
+      }
+      if (d.detBadReview) prompt += `  差评关键词: ${d.detBadReview}\n`;
+    }
+    prompt += `\n`;
+  });
+
+  prompt += `=== 分析要求 ===\n`;
+  prompt += `请从以下维度逐一分析每个候选，最后给出排名：\n`;
+
+  if (mode === 'hotel') {
+    prompt += `1. 价格竞争力（同比最低/性价比，考虑入住日期是否为旺季/周末）\n`;
+    prompt += `2. 照片真实性（实拍vs精修，照片数量信号）\n`;
+    prompt += `3. 评价内容质量（是否有实质内容，差评是否具体）\n`;
+    prompt += `4. 房东可信度（超赞房东/回复速度）\n`;
+    prompt += `5. 卫生状况（好评/投诉关键词）\n`;
+    prompt += `6. 取消灵活性\n`;
+  } else {
+    prompt += `1. 价格合理性（对比同类商品，识别异常低价/溢价）\n`;
+    prompt += `2. 刷单检测（评价模式、追评率、图片评价占比）\n`;
+    prompt += `3. 店铺可信度（DSR评分、经营年限、资质认证）\n`;
+    prompt += `4. 商品质量信号（材质标注、参数完整度、实拍图）\n`;
+    prompt += `5. 服务保障（退货包运费、假一赔十、品牌授权）\n`;
+  }
+  prompt += `6. 综合风险评级\n\n`;
+  prompt += `请输出格式：\n`;
+  prompt += `🏆 最终排名\n`;
+  prompt += `#1 [名称] - 评分/10 - 核心理由\n`;
+  prompt += `#2 ...\n`;
+  prompt += `💡 购买建议：...\n`;
+  prompt += `⚠️ 避坑警告：...\n`;
+
+  return prompt;
+}
+
+// ============================================================
+// 🤖 Claude API 直接调用（排名时自动触发，双栈执行）
+// ============================================================
+async function runAIAnalysis(scored, apiKey) {
+  const prompt = buildAIPrompt();
+  if (!prompt) return;
+
+  const loading = document.getElementById('aiLoading');
+  const resultDiv = document.getElementById('aiResult');
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-5-20250901',
+        max_tokens: 4096,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || `HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+    const text = data.content?.[0]?.text || JSON.stringify(data);
+
+    aiResult = `<div class="card" style="white-space:pre-wrap;font-size:13px;line-height:1.5"><div style="font-size:11px;color:var(--accent);margin-bottom:6px">🤖 Claude 深度分析</div>${text.replace(/\n/g, '<br>')}</div>`;
+    localStorage.setItem('hl_ai_result', aiResult);
+
+    resultDiv.innerHTML = aiResult;
+    resultDiv.classList.add('show');
+    document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+    toast('✅ AI 深度分析完成！');
+  } catch (e) {
+    resultDiv.innerHTML = `<div class="card" style="color:var(--red);font-size:13px">❌ AI 分析失败：${e.message}<br><small style="color:var(--muted)">请检查 API Key 是否正确</small></div>`;
+    resultDiv.classList.add('show');
+  } finally {
+    loading.classList.remove('show');
+  }
+}
+
+// ============================================================
+// 工具函数
+// ============================================================
+function save() { localStorage.setItem('hl_items', JSON.stringify(items)); }
+function updateButtons() {
+  const modeItems = items.filter(i => (i.mode || 'hotel') === mode);
+  document.getElementById('rankBtn').disabled = modeItems.length < 2;
+  document.getElementById('rankBtn').textContent = modeItems.length >= 2 ? `📊 排名 (${modeItems.length})` : '📊 排名';
+}
+function toast(msg, warn) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = warn ? 'warn show' : 'show';
+  setTimeout(() => el.className = '', 2000);
+}
+
+// ============================================================
+// PWA 安装
+// ============================================================
+let deferredPrompt = null;
+const installBanner = document.getElementById('installBanner');
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; installBanner.style.display = 'flex'; });
+window.addEventListener('appinstalled', () => { deferredPrompt = null; installBanner.style.display = 'none'; toast('✅ 已添加！如未看到图标请查看应用抽屉'); });
+function installPWA() {
+  if (!deferredPrompt) { toast('请从 Chrome 菜单选择"添加到主屏幕"', true); return; }
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(r => {
+    toast(r.outcome === 'accepted' ? '✅ 安装成功！' : '⏳ 已取消');
+    deferredPrompt = null; installBanner.style.display = 'none';
+  });
+}
+// 强制清除旧缓存，注册新 Service Worker
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => {
+    regs.forEach(r => r.unregister());
+  }).finally(() => {
+    navigator.serviceWorker.register('sw.js?v=27').catch(() => {});
+  });
+}
+
+// 启动
+init();
+renderDepthFields();
+document.getElementById('manPfm').innerHTML = '<option value="">平台</option>' + currentPFMs().map(p => `<option>${p.name}</option>`).join('');
+</script>
+</body>
+</html>
