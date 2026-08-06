@@ -139,40 +139,80 @@ h1 { font-size: 20px; text-align: center; margin-bottom: 2px; }
 }
 .batch-modal-header h3 { font-size: 18px; margin-bottom: 4px; }
 .batch-modal-header .batch-hint { font-size: 12px; color: var(--sub); }
-.batch-groups { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; margin-bottom: 14px; }
-.batch-group-card {
-  background: var(--card); border: 1px solid var(--border); border-radius: var(--r);
-  padding: 12px; transition: all .2s;
+/* 手动分组 - 截图网格 */
+.batch-grid-label { font-size: 12px; color: var(--sub); margin-bottom: 8px; flex-shrink: 0; }
+.batch-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+  max-height: 220px; overflow-y: auto; margin-bottom: 10px; flex-shrink: 0;
 }
-.batch-group-card .group-label {
-  font-size: 11px; color: var(--accent); font-weight: 700; margin-bottom: 6px;
-  display: flex; justify-content: space-between; align-items: center;
+.batch-grid-item {
+  position: relative; aspect-ratio: 3/4; border-radius: 8px; overflow: hidden;
+  border: 3px solid transparent; cursor: pointer; transition: all .15s;
 }
-.batch-group-card .group-thumbs {
-  display: flex; gap: 4px; overflow-x: auto; margin-bottom: 10px;
-  padding-bottom: 4px;
+.batch-grid-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.batch-grid-item.selected { border-color: var(--accent); opacity: 0.85; }
+.batch-grid-item.selected::after {
+  content: '✓'; position: absolute; top: 2px; right: 4px;
+  color: var(--accent); font-size: 16px; font-weight: 700;
+  text-shadow: 0 0 4px rgba(0,0,0,0.8);
 }
-.batch-group-card .group-thumbs img {
-  width: 70px; height: 100px; object-fit: cover; border-radius: 6px;
-  border: 1px solid var(--border); flex-shrink: 0;
+.batch-grid-item.grouped { border-color: var(--green); opacity: 0.5; pointer-events: none; }
+.batch-grid-item.grouped::after {
+  content: '✓'; position: absolute; top: 2px; right: 4px;
+  color: var(--green); font-size: 12px; font-weight: 700;
+  text-shadow: 0 0 4px rgba(0,0,0,0.8);
 }
-.batch-group-card .group-thumbs .more-count {
-  width: 70px; height: 100px; flex-shrink: 0; border-radius: 6px;
-  background: var(--input); display: flex; align-items: center; justify-content: center;
-  font-size: 14px; color: var(--sub);
+
+/* 当前选择 */
+.batch-current {
+  background: rgba(245,158,11,0.08); border: 1px solid var(--accent);
+  border-radius: var(--r); padding: 10px; margin-bottom: 10px; flex-shrink: 0;
 }
-.batch-group-card .group-inputs {
-  display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
+.batch-current-info {
+  display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
 }
-.batch-group-card .group-inputs input,
-.batch-group-card .group-inputs select {
+.batch-sel-count { font-size: 12px; color: var(--accent); font-weight: 600; }
+.batch-clear-sel {
+  font-size: 11px; background: none; border: 1px solid var(--border);
+  color: var(--sub); padding: 3px 10px; border-radius: 12px; cursor: pointer;
+}
+.batch-current-inputs {
+  display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap;
+}
+.batch-current-inputs input,
+.batch-current-inputs select {
   padding: 9px 8px; font-size: 13px; background: var(--input);
   border: 1px solid var(--border); border-radius: 8px; color: var(--text); outline: none;
 }
-.batch-group-card .group-inputs input:focus { border-color: var(--accent); }
-.batch-group-card .group-inputs .gname { flex: 2; min-width: 80px; }
-.batch-group-card .group-inputs .gprice { flex: 1; min-width: 60px; }
-.batch-group-card .group-inputs .gpfm { flex: 1.2; min-width: 70px; font-size: 11px; }
+.batch-current-inputs input:focus { border-color: var(--accent); }
+.batch-current-inputs .gname { flex: 2; min-width: 80px; }
+.batch-current-inputs .gprice { flex: 1; min-width: 60px; }
+.batch-current-inputs .gpfm { flex: 1.2; min-width: 70px; font-size: 11px; }
+.btn-confirm-group {
+  width: 100%; padding: 10px; font-size: 14px; font-weight: 700;
+  background: var(--accent); color: #000; border: none; border-radius: 8px; cursor: pointer;
+}
+.btn-confirm-group:active { opacity: 0.8; }
+
+/* 已分组列表 */
+#batchGroupedList { flex: 1; overflow-y: auto; margin-bottom: 8px; min-height: 0; }
+.batch-grouped-item {
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+  background: rgba(34,197,94,0.06); border: 1px solid rgba(34,197,94,0.2);
+  border-radius: 8px; margin-bottom: 6px; font-size: 12px;
+}
+.batch-grouped-item .gthumb-preview {
+  width: 36px; height: 48px; object-fit: cover; border-radius: 4px; flex-shrink: 0;
+}
+.batch-grouped-item .ginfo { flex: 1; min-width: 0; }
+.batch-grouped-item .gname-text { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.batch-grouped-item .gmeta { color: var(--sub); font-size: 11px; }
+.batch-grouped-item .gdel {
+  background: none; border: none; color: var(--red); font-size: 16px;
+  cursor: pointer; padding: 4px; flex-shrink: 0;
+}
+.batch-grouped-item .gcount { color: var(--accent); font-weight: 700; flex-shrink: 0; font-size: 11px; }
+.remaining-label { font-size: 11px; color: var(--muted); padding: 4px 0; }
 .batch-actions {
   display: flex; gap: 10px; flex-shrink: 0;
   position: sticky; bottom: 0; background: var(--bg); padding-top: 10px;
@@ -183,6 +223,7 @@ h1 { font-size: 20px; text-align: center; margin-bottom: 2px; }
 }
 .batch-actions .btn-cancel { background: var(--input); color: var(--sub); }
 .batch-actions .btn-confirm { background: var(--green); color: #000; }
+.batch-actions .btn-confirm:disabled { opacity: 0.4; }
 
 /* 卡片中截图缩略图 */
 .card-thumbs { display: flex; gap: 2px; margin-top: 6px; overflow-x: auto; }
@@ -343,7 +384,7 @@ h1 { font-size: 20px; text-align: center; margin-bottom: 2px; }
 <body>
 
 <h1>🤖 AI 购物比价</h1>
-<div class="subtitle" id="timestamp">v29 · 粘贴链接 + 截图识别 → AI 排名</div>
+<div class="subtitle" id="timestamp">v30 · 粘贴链接 + 截图识别 → AI 排名</div>
 
 <!-- 安装横幅 -->
 <div id="installBanner">
@@ -444,13 +485,31 @@ h1 { font-size: 20px; text-align: center; margin-bottom: 2px; }
 <!-- 批量导入弹窗 -->
 <div id="batchModal" class="batch-modal-overlay" style="display:none">
   <div class="batch-modal-header">
-    <h3>📸 截图自动分组</h3>
-    <span class="batch-hint" id="batchHint">按截图时间间隔自动分组 · 每组 = 一个商品</span>
+    <h3>📸 手动分组截图</h3>
+    <span class="batch-hint" id="batchHint">点击图片选中 → 填写信息 → 确认一组 → 重复</span>
   </div>
-  <div class="batch-groups" id="batchGroups"></div>
+  <!-- 截图网格 -->
+  <div class="batch-grid-label">🖼 截图列表（点击选择/取消）</div>
+  <div class="batch-grid" id="batchGrid"></div>
+  <!-- 当前选择 -->
+  <div class="batch-current" id="batchCurrent" style="display:none">
+    <div class="batch-current-info">
+      <span class="batch-sel-count" id="batchSelCount">已选 0 张</span>
+      <button class="batch-clear-sel" onclick="clearSelection()">清除</button>
+    </div>
+    <div class="batch-current-inputs">
+      <input class="gname" id="bgname" placeholder="商品/房源名称" autocomplete="off">
+      <input class="gprice" id="bgprice" type="number" placeholder="¥价格">
+      <select class="gpfm" id="bgpfm"><option value="">平台</option></select>
+    </div>
+    <button class="btn-confirm-group" onclick="confirmGroup()">✅ 确认这组</button>
+  </div>
+  <!-- 已分组列表 -->
+  <div id="batchGroupedList"></div>
+  <!-- 底部操作 -->
   <div class="batch-actions">
     <button class="btn-cancel" onclick="closeBatchModal()">取消</button>
-    <button class="btn-confirm" onclick="confirmBatchImport()">✅ 全部导入</button>
+    <button class="btn-confirm" id="batchFinalConfirm" onclick="confirmBatchImport()" disabled>全部导入</button>
   </div>
 </div>
 
@@ -560,7 +619,7 @@ function init() {
   renderItems();
   updateButtons();
   document.getElementById('timestamp').textContent =
-    'v29 |  ' + (mode === 'pdd' ? '拼多多 · 淘宝 · 京东 · 抖音商城' : '途家 · 美团 · 去哪儿 · 智行 · 同程 · 飞猪') +
+    'v30 |  ' + (mode === 'pdd' ? '拼多多 · 淘宝 · 京东 · 抖音商城' : '途家 · 美团 · 去哪儿 · 智行 · 同程 · 飞猪') +
     '  |  ' + new Date().toLocaleDateString('zh-CN');
   if (aiResult) {
     document.getElementById('results').classList.add('show');
@@ -583,7 +642,7 @@ function updateModeUI() {
   document.getElementById('destInput').placeholder = mode === 'pdd' ? '商品名（如：蓝牙耳机）' : '目的地（如：大理）';
   document.getElementById('dateRow').classList.toggle('show', mode === 'hotel');
   document.getElementById('timestamp').textContent =
-    'v29 |  ' + (mode === 'pdd' ? '拼多多 · 淘宝 · 京东 · 抖音商城' : '途家 · 美团 · 去哪儿 · 智行 · 同程 · 飞猪') +
+    'v30 |  ' + (mode === 'pdd' ? '拼多多 · 淘宝 · 京东 · 抖音商城' : '途家 · 美团 · 去哪儿 · 智行 · 同程 · 飞猪') +
     '  |  ' + new Date().toLocaleDateString('zh-CN');
   renderDepthFields();
 }
@@ -919,9 +978,13 @@ function readImageAsBase64(file, maxWidth, quality) {
 }
 
 // ============================================================
-// 📸📸 批量导入截图 — 时间分组
+// 📸📸 批量导入截图 — 手动分组
 // ============================================================
-let batchGroups = [];  // { files: File[], thumbs: [base64dataUrl,...], name, price, platform }
+let batchAllFiles = [];        // All selected File objects
+let batchAllThumbs = [];       // Corresponding thumbnail dataURLs
+let batchSelected = new Set(); // Currently selected indices
+let batchGrouped = new Set();  // Indices already assigned to a group
+let batchGroups = [];          // [{ name, price, platform, indices, thumbs }]
 
 async function handleBatchImport(event) {
   const files = Array.from(event.target.files);
@@ -931,51 +994,34 @@ async function handleBatchImport(event) {
     event.target.value = ''; return;
   }
 
-  // Sort by lastModified (capture time)
+  // Sort by lastModified (capture time) for display
   files.sort((a, b) => a.lastModified - b.lastModified);
 
-  // Group by time gap (45 seconds = new product)
-  const GAP_MS = 45000;
+  batchAllFiles = files;
+  batchAllThumbs = [];
+  batchSelected = new Set();
+  batchGrouped = new Set();
   batchGroups = [];
-  let currentGroup = [];
 
-  for (let i = 0; i < files.length; i++) {
-    if (currentGroup.length === 0) {
-      currentGroup.push(files[i]);
-    } else {
-      const gap = files[i].lastModified - currentGroup[currentGroup.length - 1].lastModified;
-      if (gap > GAP_MS) {
-        // New group
-        if (currentGroup.length > 0) batchGroups.push(currentGroup);
-        currentGroup = [files[i]];
-      } else {
-        currentGroup.push(files[i]);
-      }
-    }
-  }
-  if (currentGroup.length > 0) batchGroups.push(currentGroup);
-
-  // Generate thumbnails for each group (first 4 images, compressed)
+  // Generate thumbnails for all files
   const toaster = document.getElementById('toast');
-  toaster.textContent = `⏳ 正在处理 ${batchGroups.length} 组截图...`; toaster.className = 'show';
+  toaster.textContent = `⏳ 正在生成 ${files.length} 张缩略图...`; toaster.className = 'show';
 
-  for (const group of batchGroups) {
-    group._thumbs = [];
-    for (let i = 0; i < Math.min(group.length, 4); i++) {
-      try {
-        const thumb = await compressImage(group[i], 150, 0.3);
-        group._thumbs.push(thumb);
-      } catch (e) {
-        // Skip failed thumbnails
-      }
+  for (const file of files) {
+    try {
+      const thumb = await compressImage(file, 180, 0.3);
+      batchAllThumbs.push(thumb);
+    } catch (e) {
+      batchAllThumbs.push(null);
     }
-    // Pre-fill: try to detect platform from filename (sometimes screenshots contain app name in metadata)
   }
-
   toaster.className = '';
 
-  // Show the modal
-  renderBatchModal();
+  // Init platform dropdown
+  document.getElementById('bgpfm').innerHTML = '<option value="">平台</option>' +
+    currentPFMs().map(p => `<option value="${p.name}">${p.emoji} ${p.name}</option>`).join('');
+
+  renderBatchUI();
   document.getElementById('batchModal').style.display = 'flex';
   event.target.value = '';
 }
@@ -1002,59 +1048,160 @@ function compressImage(file, maxWidth, quality) {
   });
 }
 
-function renderBatchModal() {
+function renderBatchUI() {
+  // Update hint
+  const remaining = batchAllFiles.length - batchGrouped.size;
   document.getElementById('batchHint').textContent =
-    `识别到 ${batchGroups.length} 组截图 · 每组 = 一个商品 · 请填写信息`;
+    remaining > 0
+      ? `点击图片选中 → 填写信息 → 确认一组（还剩 ${remaining} 张未分组）`
+      : `全部截图已分组！点击下方按钮导入`;
 
-  const container = document.getElementById('batchGroups');
-  const pfms = currentPFMs();
-  const pfmOptions = pfms.map(p => `<option value="${p.name}">${p.emoji} ${p.name}</option>`).join('');
-
-  container.innerHTML = batchGroups.map((g, gi) => {
-    const firstFile = g[0];
-    const capTime = new Date(firstFile.lastModified);
-    const timeStr = capTime.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
-
-    // Render thumbnails
-    let thumbsHTML = g._thumbs.map(t => `<img src="${t}" alt="">`).join('');
-    if (g.length > 4) {
-      thumbsHTML += `<div class="more-count">+${g.length - 4}</div>`;
-    }
-
-    return `
-    <div class="batch-group-card">
-      <div class="group-label">
-        <span>📦 商品 ${gi + 1} · ${timeStr} · ${g.length}张截图</span>
-      </div>
-      <div class="group-thumbs">${thumbsHTML}</div>
-      <div class="group-inputs">
-        <input class="gname" id="bgname_${gi}" placeholder="商品/房源名称" autocomplete="off">
-        <input class="gprice" id="bgprice_${gi}" type="number" placeholder="¥价格">
-        <select class="gpfm" id="bgpfm_${gi}"><option value="">平台</option>${pfmOptions}</select>
-      </div>
-    </div>`;
+  // Render grid
+  const grid = document.getElementById('batchGrid');
+  grid.innerHTML = batchAllFiles.map((f, i) => {
+    let cls = 'batch-grid-item';
+    if (batchGrouped.has(i)) cls += ' grouped';
+    else if (batchSelected.has(i)) cls += ' selected';
+    const thumb = batchAllThumbs[i] || '';
+    return `<div class="${cls}" onclick="toggleImage(${i})" id="gridItem${i}"><img src="${thumb}" alt=""></div>`;
   }).join('');
+
+  // Show/hide current selection panel
+  updateCurrentPanel();
+
+  // Render grouped list
+  renderGroupedList();
+
+  // Update final confirm button
+  updateFinalButton();
+}
+
+function toggleImage(idx) {
+  if (batchGrouped.has(idx)) return; // Already grouped, ignore
+  if (batchSelected.has(idx)) {
+    batchSelected.delete(idx);
+  } else {
+    batchSelected.add(idx);
+  }
+  renderBatchUI();
+}
+
+function clearSelection() {
+  batchSelected.clear();
+  renderBatchUI();
+}
+
+function updateCurrentPanel() {
+  const panel = document.getElementById('batchCurrent');
+  const count = batchSelected.size;
+
+  if (count === 0) {
+    panel.style.display = 'none';
+    return;
+  }
+  panel.style.display = 'block';
+  document.getElementById('batchSelCount').textContent = `已选 ${count} 张`;
+}
+
+function confirmGroup() {
+  if (batchSelected.size === 0) {
+    toast('请先在网格中点击选择截图', true); return;
+  }
+  const name = document.getElementById('bgname').value.trim();
+  const price = parseInt(document.getElementById('bgprice').value || '0');
+  const platform = document.getElementById('bgpfm').value;
+
+  if (!name) { toast('请输入商品名称', true); return; }
+  if (!price || price <= 0) { toast('请输入价格', true); return; }
+
+  const indices = Array.from(batchSelected);
+  // Get thumbs for these indices (max 5)
+  const thumbs = indices.slice(0, 5).map(i => batchAllThumbs[i]).filter(Boolean);
+
+  batchGroups.push({
+    name: name.substring(0, 60),
+    price: price,
+    platform: platform || '',
+    indices: indices,
+    thumbs: thumbs,
+  });
+
+  // Mark as grouped
+  indices.forEach(i => batchGrouped.add(i));
+
+  // Clear selection and inputs
+  batchSelected.clear();
+  document.getElementById('bgname').value = '';
+  document.getElementById('bgprice').value = '';
+  document.getElementById('bgpfm').value = '';
+
+  renderBatchUI();
+}
+
+function removeGroup(gi) {
+  const group = batchGroups[gi];
+  // Return indices to ungrouped pool
+  group.indices.forEach(i => batchGrouped.delete(i));
+  batchGroups.splice(gi, 1);
+  renderBatchUI();
+}
+
+function renderGroupedList() {
+  const container = document.getElementById('batchGroupedList');
+  if (batchGroups.length === 0) {
+    container.innerHTML = '<div class="remaining-label">暂无分组，请选择截图并确认</div>';
+    return;
+  }
+  let html = '';
+  batchGroups.forEach((g, gi) => {
+    const firstThumb = g.thumbs[0] || '';
+    html += `
+    <div class="batch-grouped-item">
+      ${firstThumb ? `<img class="gthumb-preview" src="${firstThumb}" alt="">` : ''}
+      <div class="ginfo">
+        <div class="gname-text">${g.name}</div>
+        <div class="gmeta">¥${g.price}${g.platform ? ' · ' + g.platform : ''}</div>
+      </div>
+      <span class="gcount">${g.indices.length}张</span>
+      <button class="gdel" onclick="removeGroup(${gi})">×</button>
+    </div>`;
+  });
+
+  const remaining = batchAllFiles.length - batchGrouped.size;
+  if (remaining > 0) {
+    html += `<div class="remaining-label">⚠️ 还有 ${remaining} 张截图未分组</div>`;
+  }
+  container.innerHTML = html;
+}
+
+function updateFinalButton() {
+  const btn = document.getElementById('batchFinalConfirm');
+  btn.disabled = batchGroups.length === 0;
+  btn.textContent = batchGroups.length > 0
+    ? `✅ 全部导入 (${batchGroups.length}个商品)`
+    : '全部导入';
 }
 
 function confirmBatchImport() {
+  if (batchGroups.length === 0) {
+    toast('⚠️ 请至少分组一个商品', true); return;
+  }
+
+  // Check for ungrouped images
+  const remaining = batchAllFiles.length - batchGrouped.size;
+  if (remaining > 0) {
+    if (!confirm(`还有 ${remaining} 张截图未分组，确定跳过并只导入已分组的 ${batchGroups.length} 个商品？`)) {
+      return;
+    }
+  }
+
   let imported = 0;
-  for (let gi = 0; gi < batchGroups.length; gi++) {
-    const name = (document.getElementById('bgname_' + gi)?.value || '').trim();
-    const price = parseInt(document.getElementById('bgprice_' + gi)?.value || '0');
-    const platform = document.getElementById('bgpfm_' + gi)?.value || '';
-
-    if (!name) continue;
-    if (!price || price <= 0) continue;
-
-    const group = batchGroups[gi];
-    // Store thumbnails (max 5) as base64 data URLs
-    const thumbs = group._thumbs.slice(0, 5);
-
+  for (const g of batchGroups) {
     items.unshift({
-      id: Date.now() + gi,  // Ensure unique IDs even within same ms
-      name: name.substring(0, 60),
-      price: price,
-      platform: platform || '',
+      id: Date.now() + imported,
+      name: g.name,
+      price: g.price,
+      platform: g.platform,
       link: '',
       score: null,
       time: new Date().toISOString(),
@@ -1062,24 +1209,23 @@ function confirmBatchImport() {
       checkin: mode === 'hotel' ? checkin : null,
       checkout: mode === 'hotel' ? checkout : null,
       nights: mode === 'hotel' ? nightsCount() : null,
-      thumbs: thumbs,
-      thumbCount: group.length,  // Total screenshot count
+      thumbs: g.thumbs,
+      thumbCount: g.indices.length,
     });
     imported++;
   }
 
-  if (imported === 0) {
-    toast('⚠️ 请至少为一个商品填写名称和价格', true);
-    return;
-  }
-
   save(); renderItems(); updateButtons();
   closeBatchModal();
-  toast(`✅ 已导入 ${imported} 个商品（共 ${batchGroups.reduce((s, g) => s + g.length, 0)} 张截图）`);
+  toast(`✅ 已导入 ${imported} 个商品（共 ${batchGroups.reduce((s, g) => s + g.indices.length, 0)} 张截图）`);
 }
 
 function closeBatchModal() {
   document.getElementById('batchModal').style.display = 'none';
+  batchAllFiles = [];
+  batchAllThumbs = [];
+  batchSelected = new Set();
+  batchGrouped = new Set();
   batchGroups = [];
 }
 
@@ -1418,7 +1564,7 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then(regs => {
     regs.forEach(r => r.unregister());
   }).finally(() => {
-    navigator.serviceWorker.register('sw.js?v=29').catch(() => {});
+    navigator.serviceWorker.register('sw.js?v=30').catch(() => {});
   });
 }
 
