@@ -367,6 +367,15 @@ h1 { font-size: 20px; text-align: center; margin-bottom: 2px; }
 }
 #toast.show { opacity: 1; } #toast.warn { background: var(--red); }
 
+/* API Key 状态栏 */
+.api-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 8px 12px; margin-bottom: 10px;
+  background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+  font-size: 12px;
+}
+.api-bar.ok { border-color: var(--green); }
+
 .empty { text-align: center; padding: 30px; color: var(--muted); font-size: 14px; }
 
 /* 安装横幅 */
@@ -384,7 +393,7 @@ h1 { font-size: 20px; text-align: center; margin-bottom: 2px; }
 <body>
 
 <h1>🤖 AI 购物比价</h1>
-<div class="subtitle" id="timestamp">v31 · 粘贴链接 + 截图识别 → AI 排名</div>
+<div class="subtitle" id="timestamp">v32 · 粘贴链接 + 截图识别 → AI 排名</div>
 
 <!-- 安装横幅 -->
 <div id="installBanner">
@@ -414,17 +423,6 @@ h1 { font-size: 20px; text-align: center; margin-bottom: 2px; }
   <label class="late-check" id="lateCheckLabel"><input type="checkbox" id="lateNight" onchange="toggleLateNight()"> 凌晨</label>
 </div>
 
-<!-- 主入口：粘贴链接 -->
-<div class="paste-hero" onclick="pasteListing()" id="pasteBtn">
-  <div class="paste-icon">📋</div>
-  <div class="paste-title">粘贴商品/房源链接</div>
-  <div class="paste-desc">在 App 中复制链接 → 回到这里点击 → 自动识别</div>
-  <div class="paste-platforms">
-    <span>🏡途家</span><span>🟡美团</span><span>🐫去哪儿</span><span>🚅智行</span><span>✈️同程</span><span>🐷飞猪</span>
-    <span>📦拼多多</span><span>🛍淘宝</span><span>🐕京东</span><span>🎵抖音</span>
-  </div>
-</div>
-
 <!-- 截图上传 -->
 <label for="snapInput" style="display:block;cursor:pointer;-webkit-tap-highlight-color:transparent">
   <div class="snap-hero" id="snapBtn">
@@ -446,26 +444,9 @@ h1 { font-size: 20px; text-align: center; margin-bottom: 2px; }
 </label>
 <input type="file" id="batchSnapInput" accept="image/png,image/jpeg,image/webp" multiple style="position:absolute;opacity:0;width:0;height:0;overflow:hidden" onchange="handleBatchImport(event)">
 
-<!-- 手动输入（折叠） -->
-<details class="manual-section" id="manualSection">
-  <summary>✏️ 手动输入（途家等无法复制链接时使用）</summary>
-  <div class="manual-row">
-    <input class="name-inp" id="manName" placeholder="名称">
-    <input class="price-inp" id="manPrice" type="number" placeholder="¥价格">
-    <select class="pfm-sel" id="manPfm"><option value="">平台</option></select>
-    <button class="add-btn" onclick="addManual()">+</button>
-  </div>
-</details>
-
-<!-- 深度分析字段 -->
-<details class="depth-section" id="depthSection">
-  <summary>🔍 深度分析字段（点击展开 — 填完信息后帮助排名更准）</summary>
-  <div class="depth-fields" id="depthFields"></div>
-</details>
-
 <!-- 列表 -->
 <div class="hotel-list" id="itemList">
-  <div class="empty">👆 先点平台按钮跳转搜索<br>找到后复制链接回来粘贴</div>
+  <div class="empty">👆 点击上方按钮上传商品/房源截图<br>AI 自动提取信息并排名</div>
 </div>
 
 <!-- AI 分析状态（排名时自动显示） -->
@@ -476,6 +457,12 @@ h1 { font-size: 20px; text-align: center; margin-bottom: 2px; }
 <div class="results" id="results">
   <h2>🏆 排名结果</h2>
   <div id="rankedList"></div>
+</div>
+
+<!-- API Key 管理 -->
+<div class="api-bar" id="apiBar">
+  <span id="apiStatus">🔑 API Key 未设置</span>
+  <button onclick="setApiKey()" style="font-size:11px;padding:4px 10px;background:var(--input);color:var(--sub);border:1px solid var(--border);border-radius:12px;cursor:pointer">设置</button>
 </div>
 
 <!-- 底部 -->
@@ -579,29 +566,6 @@ const PDD_PFMS = [
 
 function currentPFMs() { return mode === 'pdd' ? PDD_PFMS : HOTEL_PFMS; }
 
-// 深度字段配置
-const HOTEL_DEPTH = [
-  { id:'detPhoto', label:'📷 照片质量', type:'select', opts:[['',''],['real','✅ 大量实拍图'],['mixed','⚠️ 精修+实拍混合'],['edited','❌ 仅效果图']] },
-  { id:'detReview', label:'📝 评价质量', type:'select', opts:[['',''],['rich','✅ 有实质内容'],['mixed','⚠️ 好坏参半'],['poor','❌ 多人反映问题']] },
-  { id:'detHost', label:'👤 房东/服务', type:'select', opts:[['',''],['super','✅ 超赞房东'],['normal','➖ 正常'],['bad','❌ 服务差']] },
-  { id:'detClean', label:'🧹 卫生状况', type:'select', opts:[['',''],['clean','✅ 多人夸干净'],['mixed','⚠️ 偶有投诉'],['dirty','❌ 卫生差评多']] },
-  { id:'detPhotoCount', label:'🖼 照片数量', type:'number' },
-  { id:'detCancel', label:'📅 取消政策', type:'select', opts:[['',''],['flex','✅ 免费取消'],['moderate','➖ 中等'],['strict','❌ 不可取消']] },
-  { id:'detBadReview', label:'⚠️ 差评关键词(逗号分隔)', type:'text', full:true },
-];
-
-const PDD_DEPTH = [
-  { id:'detMaterial', label:'🧵 材质/成分', type:'select', opts:[['',''],['clear','✅ 标注清晰'],['vague','⚠️ 描述模糊'],['none','❌ 未标注']] },
-  { id:'detRealPhotos', label:'📷 实拍图', type:'select', opts:[['',''],['many','✅ 大量实拍+视频'],['some','⚠️ 少量实拍'],['none','❌ 仅精修图']] },
-  { id:'detReviews', label:'📝 评价真实性', type:'select', opts:[['',''],['real','✅ 评价自然多样'],['suspicious','⚠️ 有刷单嫌疑'],['fake','❌ 明显刷评']] },
-  { id:'detStore', label:'🏪 店铺质量', type:'select', opts:[['',''],['good','✅ 老店/高DSR/有授权'],['normal','➖ 正常'],['bad','❌ 新店/低评分']] },
-  { id:'detSpecs', label:'📐 参数完整度', type:'select', opts:[['',''],['full','✅ 参数齐全'],['partial','⚠️ 部分缺失'],['empty','❌ 无参数表']] },
-  { id:'detService', label:'🛡 服务保障', type:'select', opts:[['',''],['full','✅ 退货包运费+其他'],['basic','➖ 基本保障'],['none','❌ 无保障']] },
-  { id:'detBadReview', label:'⚠️ 差评关键词(逗号分隔)', type:'text', full:true },
-];
-
-function currentDepth() { return mode === 'pdd' ? PDD_DEPTH : HOTEL_DEPTH; }
-
 // ============================================================
 // 初始化
 // ============================================================
@@ -611,19 +575,12 @@ function init() {
   document.getElementById('checkoutDate').value = checkout;
   document.getElementById('lateNight').checked = lateNight;
   updateLateNightUI();
-  // API Key：首次使用弹出输入框，之后保存在 localStorage
-  // 注意：Key 仅存储在你的手机浏览器中，不会上传到任何服务器（除了直接调用 Anthropic API）
-  if (!localStorage.getItem('hl_api_key')) {
-    const key = prompt('🔑 请输入 Anthropic API Key（用于 AI 深度分析）：\n\nKey 仅保存在本机，不会上传到任何第三方。\n之后可在排名结果区底部修改。\n\n（跳过则不启用 AI 分析）', '');
-    if (key && key.trim()) {
-      localStorage.setItem('hl_api_key', key.trim());
-    }
-  }
+  updateApiStatus();
   updateModeUI();
   renderItems();
   updateButtons();
   document.getElementById('timestamp').textContent =
-    'v31 |  ' + (mode === 'pdd' ? '拼多多 · 淘宝 · 京东 · 抖音商城' : '途家 · 美团 · 去哪儿 · 智行 · 同程 · 飞猪') +
+    'v32 |  ' + (mode === 'pdd' ? '拼多多 · 淘宝 · 京东 · 抖音商城' : '途家 · 美团 · 去哪儿 · 智行 · 同程 · 飞猪') +
     '  |  ' + new Date().toLocaleDateString('zh-CN');
   if (aiResult) {
     document.getElementById('results').classList.add('show');
@@ -634,9 +591,6 @@ function init() {
 function switchMode(m) {
   mode = m; localStorage.setItem('hl_mode', mode);
   updateModeUI();
-  document.getElementById('manPfm').innerHTML = '<option value="">平台</option>' +
-    currentPFMs().map(p => `<option>${p.name}</option>`).join('');
-  renderDepthFields();
   toast(m === 'pdd' ? '🛒 拼多多购物模式' : '🏨 酒店民宿模式');
 }
 
@@ -646,9 +600,8 @@ function updateModeUI() {
   document.getElementById('destInput').placeholder = mode === 'pdd' ? '商品名（如：蓝牙耳机）' : '目的地（如：大理）';
   document.getElementById('dateRow').classList.toggle('show', mode === 'hotel');
   document.getElementById('timestamp').textContent =
-    'v31 |  ' + (mode === 'pdd' ? '拼多多 · 淘宝 · 京东 · 抖音商城' : '途家 · 美团 · 去哪儿 · 智行 · 同程 · 飞猪') +
+    'v32 |  ' + (mode === 'pdd' ? '拼多多 · 淘宝 · 京东 · 抖音商城' : '途家 · 美团 · 去哪儿 · 智行 · 同程 · 飞猪') +
     '  |  ' + new Date().toLocaleDateString('zh-CN');
-  renderDepthFields();
 }
 
 function setDates() {
@@ -663,14 +616,6 @@ function setDates() {
     const suffix = lateNight ? ' 🌙凌晨入住' : '';
     toast(`✅ ${nights}晚 · ${checkin} → ${checkout || '待定'}${suffix}`);
   }
-}
-
-function renderDepthFields() {
-  document.getElementById('depthFields').innerHTML = currentDepth().map(f => {
-    if (f.type === 'text') return `<input id="${f.id}" placeholder="${f.label}" class="${f.full?'full':''}" style="padding:8px;font-size:12px;background:var(--input);border:1px solid var(--border);border-radius:8px;color:var(--text)">`;
-    if (f.type === 'number') return `<input id="${f.id}" type="number" placeholder="${f.label}" style="padding:8px;font-size:12px;background:var(--input);border:1px solid var(--border);border-radius:8px;color:var(--text)">`;
-    return `<select id="${f.id}" style="padding:8px;font-size:12px;background:var(--input);border:1px solid var(--border);border-radius:8px;color:var(--text)">${f.opts.map(o => `<option value="${o[0]}">${o[1]}</option>`).join('')}</select>`;
-  }).join('');
 }
 
 function updateDest() {
@@ -695,103 +640,6 @@ function toggleLateNight() {
 function updateLateNightUI() {
   const label = document.getElementById('lateCheckLabel');
   label.classList.toggle('active', lateNight);
-}
-
-// ============================================================
-// 粘贴解析
-// ============================================================
-async function pasteListing() {
-  try {
-    const text = await navigator.clipboard.readText();
-    if (!text || text.length < 5) { toast('📋 请先在 App 中复制链接或分享文本', true); return; }
-    const parsed = parseListingText(text);
-    if (parsed.name && parsed.price) {
-      items.unshift({
-        id: Date.now(), name: parsed.name, price: parsed.price,
-        platform: parsed.platform || '', link: parsed.link || text,
-        score: parsed.score || null, time: new Date().toISOString(),
-        mode: mode,
-        checkin: mode === 'hotel' ? checkin : null,
-        checkout: mode === 'hotel' ? checkout : null,
-        nights: mode === 'hotel' ? nightsCount() : null,
-      });
-      save(); renderItems(); updateButtons();
-      toast(`✅ 已添加: ${parsed.name} ¥${parsed.price}`);
-    } else if (parsed.name) {
-      document.getElementById('manName').value = parsed.name;
-      document.getElementById('manPrice').value = '';
-      document.getElementById('manPrice').focus();
-      toast('📝 已识别名称，请补充价格');
-    } else {
-      document.getElementById('manName').value = '';
-      document.getElementById('manPrice').value = '';
-      document.getElementById('manPrice').focus();
-      toast('🤔 未能自动识别，请手动补充', true);
-    }
-  } catch (err) {
-    toast('⚠️ 无法读取剪贴板，请手动输入', true);
-  }
-}
-
-function parseListingText(text) {
-  let name = '', price = null, platform = '', link = '', score = null;
-
-  // Price patterns: ¥299, 299元, 299块, 299, ￥299, price:299
-  const pricePatterns = [
-    /[¥￥]\s*(\d+(?:\.\d{1,2})?)\s*(?:[\/每]|$)/,
-    /(\d+(?:\.\d{1,2})?)\s*[元块]\s*(?:[\/每]|$)/,
-    /[¥￥]\s*(\d+(?:\.\d{1,2})?)/,
-    /price[:\s]*(\d+(?:\.\d{1,2})?)/i,
-    /(\d+(?:\.\d{1,2})?)\s*[元块]/,
-  ];
-  for (const p of pricePatterns) { const m = text.match(p); if (m) { price = parseFloat(m[1]); break; } }
-
-  // URL extraction
-  const urlMatch = text.match(/https?:\/\/[^\s一-鿿]+/);
-  if (urlMatch) link = urlMatch[0];
-
-  // Platform detection from URL domain
-  const platformDomains = {
-    'yangkeduo': '拼多多', 'pinduoduo': '拼多多', 'mobile.yangkeduo': '拼多多',
-    'taobao': '淘宝', 'tmall': '淘宝',
-    'jd.com': '京东', 'm.jd': '京东',
-    'haohuo.jinritemai': '抖音商城', 'jinritemai': '抖音商城',
-    'tujia': '途家民宿',
-    'meituan': '美团民宿', 'i.meituan': '美团民宿',
-    'qunar': '去哪儿', 'touch.qunar': '去哪儿',
-    'ctrip': '智行', 'm.ctrip': '智行',
-    'ly.com': '同程旅行', 'm.ly': '同程旅行',
-    'fliggy': '飞猪旅行', 'market.fliggy': '飞猪旅行',
-  };
-  for (const [domain, label] of Object.entries(platformDomains)) {
-    if (link.includes(domain)) { platform = label; break; }
-  }
-
-  // Fallback: match platform name in text
-  if (!platform) {
-    for (const p of currentPFMs()) {
-      if (text.includes(p.name)) { platform = p.name; break; }
-    }
-  }
-
-  // Score: "4.8分" / "4.8评分" / "评分4.8"
-  const scoreMatch = text.match(/(\d\.\d)\s*(?:分|评分)|评分\s*(\d\.\d)/);
-  if (scoreMatch) score = parseFloat(scoreMatch[1] || scoreMatch[2]);
-
-  // Name extraction: first meaningful line
-  const lines = text.split(/[\n\r]+/).filter(l => {
-    const t = l.trim();
-    return t.length > 3 && !t.startsWith('http') && !t.match(/^[¥￥]\d/) && !/^(?:分享|来自|复制|链接|查看|打开)\b/.test(t);
-  });
-  if (lines.length > 0) {
-    name = lines[0].trim().substring(0, 60);
-    name = name.replace(/^(?:分享|来自|复制|链接|查看|打开|【.*?】)\s*/g, '');
-  }
-  if (!name) name = text.replace(/\s+/g, ' ').substring(0, 60);
-  // Clean common noise
-  name = name.replace(/^https?:\/\/\S+/, '').replace(/^\s+/, '');
-
-  return { name, price, platform, link, score };
 }
 
 // ============================================================
@@ -827,7 +675,7 @@ async function processScreenshot(event) {
         'anthropic-dangerous-direct-browser-access': 'true',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-5-20250901',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 1024,
         messages: [{
           role: 'user',
@@ -1234,33 +1082,6 @@ function closeBatchModal() {
 }
 
 // ============================================================
-// 手动添加
-// ============================================================
-function addManual() {
-  const name = document.getElementById('manName').value.trim();
-  const price = parseInt(document.getElementById('manPrice').value);
-  const platform = document.getElementById('manPfm').value;
-  if (!name) { toast('请输入名称', true); return; }
-  if (!price || price <= 0) { toast('请输入价格', true); return; }
-  const depth = {};
-  currentDepth().forEach(f => {
-    const el = document.getElementById(f.id);
-    if (el) depth[f.id] = el.value || null;
-  });
-  items.unshift({
-    id: Date.now(), name, price, platform, link: '', score: null,
-    time: new Date().toISOString(), depth, mode,
-    checkin: mode === 'hotel' ? checkin : null,
-    checkout: mode === 'hotel' ? checkout : null,
-    nights: mode === 'hotel' ? nightsCount() : null,
-  });
-  ['manName','manPrice','manPfm'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  currentDepth().forEach(f => { const el = document.getElementById(f.id); if (el) el.value = ''; });
-  save(); renderItems(); updateButtons();
-  toast('✅ 已添加');
-}
-
-// ============================================================
 // 渲染列表
 // ============================================================
 function renderItems() {
@@ -1504,7 +1325,7 @@ async function runAIAnalysis(scored, apiKey) {
         'anthropic-dangerous-direct-browser-access': 'true',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-5-20250901',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: 4096,
         messages: [{ role: 'user', content: prompt }],
       }),
@@ -1537,6 +1358,33 @@ async function runAIAnalysis(scored, apiKey) {
 // 工具函数
 // ============================================================
 function save() { localStorage.setItem('hl_items', JSON.stringify(items)); }
+
+// API Key 管理
+function updateApiStatus() {
+  const bar = document.getElementById('apiBar');
+  const status = document.getElementById('apiStatus');
+  if (localStorage.getItem('hl_api_key')) {
+    status.textContent = '🔑 API Key 已设置 ✅';
+    bar.classList.add('ok');
+  } else {
+    status.textContent = '🔑 API Key 未设置（截图识别和AI排名需要）';
+    bar.classList.remove('ok');
+  }
+}
+
+function setApiKey() {
+  const current = localStorage.getItem('hl_api_key') || '';
+  const key = prompt('🔑 请输入 Anthropic API Key：\n（用于截图识别 + AI排名分析）\n\n获取地址: https://console.anthropic.com/', current);
+  if (key === null) return; // cancelled
+  if (key.trim()) {
+    localStorage.setItem('hl_api_key', key.trim());
+    toast('✅ API Key 已保存');
+  } else {
+    localStorage.removeItem('hl_api_key');
+    toast('已清除 API Key');
+  }
+  updateApiStatus();
+}
 function updateButtons() {
   const modeItems = items.filter(i => (i.mode || 'hotel') === mode);
   document.getElementById('rankBtn').disabled = modeItems.length < 2;
@@ -1568,14 +1416,12 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.getRegistrations().then(regs => {
     regs.forEach(r => r.unregister());
   }).finally(() => {
-    navigator.serviceWorker.register('sw.js?v=31').catch(() => {});
+    navigator.serviceWorker.register('sw.js?v=32').catch(() => {});
   });
 }
 
 // 启动
 init();
-renderDepthFields();
-document.getElementById('manPfm').innerHTML = '<option value="">平台</option>' + currentPFMs().map(p => `<option>${p.name}</option>`).join('');
 </script>
 </body>
 </html>
