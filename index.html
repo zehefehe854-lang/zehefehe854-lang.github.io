@@ -393,7 +393,7 @@ h1 { font-size: 20px; text-align: center; margin-bottom: 2px; }
 <body>
 
 <h1>🤖 AI 购物比价</h1>
-<div class="subtitle" id="timestamp">v33 · 粘贴链接 + 截图识别 → AI 排名</div>
+<div class="subtitle" id="timestamp">v34 · 粘贴链接 + 截图识别 → AI 排名</div>
 
 <!-- 安装横幅 -->
 <div id="installBanner">
@@ -450,7 +450,7 @@ h1 { font-size: 20px; text-align: center; margin-bottom: 2px; }
 </div>
 
 <!-- AI 分析状态（排名时自动显示） -->
-<div class="ai-loading" id="aiLoading">🤖 Pro 深度分析中<span class="dots"></span></div>
+<div class="ai-loading" id="aiLoading">🤖 R1 深度分析中<span class="dots"></span></div>
 <div class="ai-result" id="aiResult"></div>
 
 <!-- 排名结果 -->
@@ -580,7 +580,7 @@ function init() {
   renderItems();
   updateButtons();
   document.getElementById('timestamp').textContent =
-    'v33 |  ' + (mode === 'pdd' ? '拼多多 · 淘宝 · 京东 · 抖音商城' : '途家 · 美团 · 去哪儿 · 智行 · 同程 · 飞猪') +
+    'v34 |  ' + (mode === 'pdd' ? '拼多多 · 淘宝 · 京东 · 抖音商城' : '途家 · 美团 · 去哪儿 · 智行 · 同程 · 飞猪') +
     '  |  ' + new Date().toLocaleDateString('zh-CN');
   if (aiResult) {
     document.getElementById('results').classList.add('show');
@@ -600,7 +600,7 @@ function updateModeUI() {
   document.getElementById('destInput').placeholder = mode === 'pdd' ? '商品名（如：蓝牙耳机）' : '目的地（如：大理）';
   document.getElementById('dateRow').classList.toggle('show', mode === 'hotel');
   document.getElementById('timestamp').textContent =
-    'v33 |  ' + (mode === 'pdd' ? '拼多多 · 淘宝 · 京东 · 抖音商城' : '途家 · 美团 · 去哪儿 · 智行 · 同程 · 飞猪') +
+    'v34 |  ' + (mode === 'pdd' ? '拼多多 · 淘宝 · 京东 · 抖音商城' : '途家 · 美团 · 去哪儿 · 智行 · 同程 · 飞猪') +
     '  |  ' + new Date().toLocaleDateString('zh-CN');
 }
 
@@ -655,7 +655,7 @@ async function processScreenshot(event) {
 
   const snapBtn = document.getElementById('snapBtn');
   snapBtn.classList.add('processing');
-  snapBtn.innerHTML = `<div class="snap-icon">⏳</div><div class="snap-title">Flash 图像识别中...</div><div class="snap-desc">正在分析截图内容</div>`;
+  snapBtn.innerHTML = `<div class="snap-icon">⏳</div><div class="snap-title">V3 图像识别中...</div><div class="snap-desc">正在分析截图内容</div>`;
 
   try {
     const imgData = await readImageAsBase64(file, 1600, 0.7);
@@ -1286,15 +1286,15 @@ async function runAIAnalysis(scored, apiKey) {
     const text = await callDSPro(prompt);
     if (!text) throw new Error('Pro 返回为空');
 
-    aiResult = `<div class="card" style="white-space:pre-wrap;font-size:13px;line-height:1.5"><div style="font-size:11px;color:var(--accent);margin-bottom:6px">🤖 DeepSeek Pro 深度分析</div>${text.replace(/\n/g, '<br>')}</div>`;
+    aiResult = `<div class="card" style="white-space:pre-wrap;font-size:13px;line-height:1.5"><div style="font-size:11px;color:var(--accent);margin-bottom:6px">🤖 DeepSeek R1 深度分析</div>${text.replace(/\n/g, '<br>')}</div>`;
     localStorage.setItem('hl_ai_result', aiResult);
 
     resultDiv.innerHTML = aiResult;
     resultDiv.classList.add('show');
     document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
-    toast('✅ Pro 深度分析完成！');
+    toast('✅ R1 深度分析完成！');
   } catch (e) {
-    resultDiv.innerHTML = `<div class="card" style="color:var(--red);font-size:13px">❌ Pro 分析失败：${e.message}<br><small style="color:var(--muted)">请在底部设置 DeepSeek Key</small></div>`;
+    resultDiv.innerHTML = `<div class="card" style="color:var(--red);font-size:13px">❌ R1 分析失败：${e.message}<br><small style="color:var(--muted)">请在底部设置 DeepSeek Key</small></div>`;
     resultDiv.classList.add('show');
   } finally {
     loading.classList.remove('show');
@@ -1340,13 +1340,13 @@ function setApiKey() {
   updateApiStatus();
 }
 
-// DeepSeek AI 调用 — Flash做视觉 · Pro做分析
+// DeepSeek AI 调用 — V3做图像 · R1做分析
 async function callDSVision(imageBase64, mediaType, textPrompt) {
-  // Flash: 图像识别，快+便宜
+  // V3 (deepseek-chat): 支持图像识别，速度快
   const cfg = getApiConfig();
   if (!cfg.key) throw new Error('请先设置 DeepSeek API Key');
   const body = {
-    model: 'deepseek-chat',  // Vision-capable (Flash)
+    model: 'deepseek-chat',
     max_tokens: 1024,
     messages: [{
       role: 'user',
@@ -1370,11 +1370,11 @@ async function callDSVision(imageBase64, mediaType, textPrompt) {
 }
 
 async function callDSPro(textPrompt) {
-  // Pro: 深度分析 / 排名，用更长的上下文
+  // R1 (deepseek-reasoner): 深度推理，适合多维对比排名
   const cfg = getApiConfig();
   if (!cfg.key) throw new Error('请先设置 DeepSeek API Key');
   const body = {
-    model: 'deepseek-chat',
+    model: 'deepseek-reasoner',
     max_tokens: 4096,
     messages: [{ role: 'user', content: textPrompt }]
   };
@@ -1388,6 +1388,7 @@ async function callDSPro(textPrompt) {
     throw new Error(err.error?.message || `HTTP ${res.status}`);
   }
   const data = await res.json();
+  // R1 returns reasoning in reasoning_content, final answer in content
   return data.choices?.[0]?.message?.content || '';
 }
 function updateButtons() {
