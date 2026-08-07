@@ -2,7 +2,7 @@
   "name": "酒店民宿比价",
   "short_name": "酒店比价",
   "description": "途家·美团·去哪儿·智行·同程·飞猪 多平台比价",
-  "start_url": "/v34/",
+  "start_url": "/v35/",
   "scope": "/",
   "id": "hotel-pwa-user-page",
   "display": "standalone",
