@@ -393,7 +393,7 @@ h1 { font-size: 20px; text-align: center; margin-bottom: 2px; }
 <body>
 
 <h1>🤖 AI 购物比价</h1>
-<div class="subtitle" id="timestamp">v32 · 粘贴链接 + 截图识别 → AI 排名</div>
+<div class="subtitle" id="timestamp">v33 · 粘贴链接 + 截图识别 → AI 排名</div>
 
 <!-- 安装横幅 -->
 <div id="installBanner">
@@ -450,7 +450,7 @@ h1 { font-size: 20px; text-align: center; margin-bottom: 2px; }
 </div>
 
 <!-- AI 分析状态（排名时自动显示） -->
-<div class="ai-loading" id="aiLoading">🤖 Claude 正在深度分析中<span class="dots"></span></div>
+<div class="ai-loading" id="aiLoading">🤖 Pro 深度分析中<span class="dots"></span></div>
 <div class="ai-result" id="aiResult"></div>
 
 <!-- 排名结果 -->
@@ -461,8 +461,8 @@ h1 { font-size: 20px; text-align: center; margin-bottom: 2px; }
 
 <!-- API Key 管理 -->
 <div class="api-bar" id="apiBar">
-  <span id="apiStatus">🔑 API Key 未设置</span>
-  <button onclick="setApiKey()" style="font-size:11px;padding:4px 10px;background:var(--input);color:var(--sub);border:1px solid var(--border);border-radius:12px;cursor:pointer">设置</button>
+  <span id="apiStatus">未设置 Key</span>
+  <button onclick="setApiKey()" style="font-size:11px;padding:4px 10px;background:var(--input);color:var(--sub);border:1px solid var(--border);border-radius:12px;cursor:pointer">🔑 设置 DeepSeek Key</button>
 </div>
 
 <!-- 底部 -->
@@ -580,7 +580,7 @@ function init() {
   renderItems();
   updateButtons();
   document.getElementById('timestamp').textContent =
-    'v32 |  ' + (mode === 'pdd' ? '拼多多 · 淘宝 · 京东 · 抖音商城' : '途家 · 美团 · 去哪儿 · 智行 · 同程 · 飞猪') +
+    'v33 |  ' + (mode === 'pdd' ? '拼多多 · 淘宝 · 京东 · 抖音商城' : '途家 · 美团 · 去哪儿 · 智行 · 同程 · 飞猪') +
     '  |  ' + new Date().toLocaleDateString('zh-CN');
   if (aiResult) {
     document.getElementById('results').classList.add('show');
@@ -600,7 +600,7 @@ function updateModeUI() {
   document.getElementById('destInput').placeholder = mode === 'pdd' ? '商品名（如：蓝牙耳机）' : '目的地（如：大理）';
   document.getElementById('dateRow').classList.toggle('show', mode === 'hotel');
   document.getElementById('timestamp').textContent =
-    'v32 |  ' + (mode === 'pdd' ? '拼多多 · 淘宝 · 京东 · 抖音商城' : '途家 · 美团 · 去哪儿 · 智行 · 同程 · 飞猪') +
+    'v33 |  ' + (mode === 'pdd' ? '拼多多 · 淘宝 · 京东 · 抖音商城' : '途家 · 美团 · 去哪儿 · 智行 · 同程 · 飞猪') +
     '  |  ' + new Date().toLocaleDateString('zh-CN');
 }
 
@@ -649,51 +649,18 @@ async function processScreenshot(event) {
   const file = event.target.files[0];
   if (!file) return;
 
-  const apiKey = localStorage.getItem('hl_api_key');
-  if (!apiKey) {
-    const key = prompt('🔑 请输入 Anthropic API Key（用于图像识别）：\nKey 仅保存在本机。', '');
-    if (key && key.trim()) localStorage.setItem('hl_api_key', key.trim());
-    else { toast('需要 API Key 才能使用截图识别', true); event.target.value = ''; return; }
+  if (!localStorage.getItem('hl_ds_key')) {
+    setApiKey(); event.target.value = ''; return;
   }
 
   const snapBtn = document.getElementById('snapBtn');
   snapBtn.classList.add('processing');
-  snapBtn.innerHTML = '<div class="snap-icon">⏳</div><div class="snap-title">AI 识别中...</div><div class="snap-desc">正在分析截图内容</div>';
+  snapBtn.innerHTML = `<div class="snap-icon">⏳</div><div class="snap-title">Flash 图像识别中...</div><div class="snap-desc">正在分析截图内容</div>`;
 
   try {
-    // Resize image if too large (max 1920px wide, compress quality)
-    const imgData = await readImageAsBase64(file, 1920, 0.7);
-
+    const imgData = await readImageAsBase64(file, 1600, 0.7);
     const prompt = buildVisionPrompt();
-
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1024,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: imgData.type, media_type: imgData.mediaType, data: imgData.data } },
-            { type: 'text', text: prompt },
-          ],
-        }],
-      }),
-    });
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error?.message || `HTTP ${res.status}`);
-    }
-
-    const data = await res.json();
-    const text = data.content?.[0]?.text || '';
+    const text = await callDSVision(imgData.data, imgData.mediaType, prompt);
 
     // Parse JSON from response
     const parsed = parseVisionResponse(text);
@@ -1198,7 +1165,7 @@ function rank() {
   renderRanked(scored);
 
   // 双栈执行：本地排名完成后，如果设置了 API Key，同时触发 AI 深度分析
-  const apiKey = localStorage.getItem('hl_api_key');
+  const apiKey = (localStorage.getItem('hl_ds_key') || '');
   if (apiKey) {
     document.getElementById('aiLoading').classList.add('show');
     document.getElementById('aiResult').classList.remove('show');
@@ -1229,7 +1196,7 @@ function renderRanked(scored) {
   }).join('');
   document.getElementById('results').classList.add('show');
   document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
-  const hasApiKey = !!localStorage.getItem('hl_api_key');
+  const hasApiKey = !!(localStorage.getItem('hl_ds_key') || '');
   toast(hasApiKey ? '✅ 排名完成！AI 深度分析进行中...' : '✅ 排名完成！（设置 API Key 可开启 AI 深度分析）');
 }
 
@@ -1316,38 +1283,18 @@ async function runAIAnalysis(scored, apiKey) {
   const resultDiv = document.getElementById('aiResult');
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4096,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    });
+    const text = await callDSPro(prompt);
+    if (!text) throw new Error('Pro 返回为空');
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error?.message || `HTTP ${res.status}`);
-    }
-
-    const data = await res.json();
-    const text = data.content?.[0]?.text || JSON.stringify(data);
-
-    aiResult = `<div class="card" style="white-space:pre-wrap;font-size:13px;line-height:1.5"><div style="font-size:11px;color:var(--accent);margin-bottom:6px">🤖 Claude 深度分析</div>${text.replace(/\n/g, '<br>')}</div>`;
+    aiResult = `<div class="card" style="white-space:pre-wrap;font-size:13px;line-height:1.5"><div style="font-size:11px;color:var(--accent);margin-bottom:6px">🤖 DeepSeek Pro 深度分析</div>${text.replace(/\n/g, '<br>')}</div>`;
     localStorage.setItem('hl_ai_result', aiResult);
 
     resultDiv.innerHTML = aiResult;
     resultDiv.classList.add('show');
     document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
-    toast('✅ AI 深度分析完成！');
+    toast('✅ Pro 深度分析完成！');
   } catch (e) {
-    resultDiv.innerHTML = `<div class="card" style="color:var(--red);font-size:13px">❌ AI 分析失败：${e.message}<br><small style="color:var(--muted)">请检查 API Key 是否正确</small></div>`;
+    resultDiv.innerHTML = `<div class="card" style="color:var(--red);font-size:13px">❌ Pro 分析失败：${e.message}<br><small style="color:var(--muted)">请在底部设置 DeepSeek Key</small></div>`;
     resultDiv.classList.add('show');
   } finally {
     loading.classList.remove('show');
@@ -1360,30 +1307,88 @@ async function runAIAnalysis(scored, apiKey) {
 function save() { localStorage.setItem('hl_items', JSON.stringify(items)); }
 
 // API Key 管理
+function getApiConfig() {
+  const key = localStorage.getItem('hl_ds_key') || '';
+  return { key };
+}
+
 function updateApiStatus() {
   const bar = document.getElementById('apiBar');
   const status = document.getElementById('apiStatus');
-  if (localStorage.getItem('hl_api_key')) {
-    status.textContent = '🔑 API Key 已设置 ✅';
+  const cfg = getApiConfig();
+  if (cfg.key) {
+    status.textContent = '🟢 DeepSeek Key ✅';
     bar.classList.add('ok');
   } else {
-    status.textContent = '🔑 API Key 未设置（截图识别和AI排名需要）';
+    status.textContent = '未设置 Key';
     bar.classList.remove('ok');
   }
 }
 
 function setApiKey() {
-  const current = localStorage.getItem('hl_api_key') || '';
-  const key = prompt('🔑 请输入 Anthropic API Key：\n（用于截图识别 + AI排名分析）\n\n获取地址: https://console.anthropic.com/', current);
-  if (key === null) return; // cancelled
-  if (key.trim()) {
-    localStorage.setItem('hl_api_key', key.trim());
-    toast('✅ API Key 已保存');
+  const current = localStorage.getItem('hl_ds_key') || '';
+  const key = prompt('🔑 DeepSeek API Key\n\n获取: https://platform.deepseek.com/api_keys\nFlash做图像识别 · Pro做深度分析\nKey 只存在本机浏览器', current);
+  if (key === null) return;
+  const trimmed = key.trim();
+  if (trimmed) {
+    localStorage.setItem('hl_ds_key', trimmed);
+    toast('✅ DeepSeek Key 已保存');
   } else {
-    localStorage.removeItem('hl_api_key');
-    toast('已清除 API Key');
+    localStorage.removeItem('hl_ds_key');
+    toast('已清除');
   }
   updateApiStatus();
+}
+
+// DeepSeek AI 调用 — Flash做视觉 · Pro做分析
+async function callDSVision(imageBase64, mediaType, textPrompt) {
+  // Flash: 图像识别，快+便宜
+  const cfg = getApiConfig();
+  if (!cfg.key) throw new Error('请先设置 DeepSeek API Key');
+  const body = {
+    model: 'deepseek-chat',  // Vision-capable (Flash)
+    max_tokens: 1024,
+    messages: [{
+      role: 'user',
+      content: [
+        { type: 'image_url', image_url: { url: 'data:' + mediaType + ';base64,' + imageBase64 } },
+        { type: 'text', text: textPrompt }
+      ]
+    }]
+  };
+  const res = await fetch('https://api.deepseek.com/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + cfg.key },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || '';
+}
+
+async function callDSPro(textPrompt) {
+  // Pro: 深度分析 / 排名，用更长的上下文
+  const cfg = getApiConfig();
+  if (!cfg.key) throw new Error('请先设置 DeepSeek API Key');
+  const body = {
+    model: 'deepseek-chat',
+    max_tokens: 4096,
+    messages: [{ role: 'user', content: textPrompt }]
+  };
+  const res = await fetch('https://api.deepseek.com/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + cfg.key },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || '';
 }
 function updateButtons() {
   const modeItems = items.filter(i => (i.mode || 'hotel') === mode);
